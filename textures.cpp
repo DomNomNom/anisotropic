@@ -4,9 +4,96 @@
 #include <GL/gl.h>
 #include <GL/glut.h>
 
-// typedef unsigned int time_t;
-// #include <time.h>
+
+// EXR
+#include <ImfInputFile.h>
+#include <ImfRgbaFile.h>
+#include <ImfChannelList.h>
+#include <ImfFrameBuffer.h>
+#include <half.h>
+#include <ImfArray.h>
+
+
 #include <png.h>
+
+
+
+// ====== HDR (.exr) loading ======
+
+// credit to Andrew Chalmers for this bit of code.
+// http://www.openexr.com/TechnicalIntroduction.pdf
+// http://www.openexr.com/ReadingAndWritingImageFiles.pdf
+
+GLuint exr_texture_load(const char *file_name) {
+    // Imf::RgbaInputFile file(file_name);
+    // Imath::Box2i dw = file.dataWindow();
+    // int width = dw.max.x - dw.min.x + 1;
+    // int height = dw.max.y - dw.min.y + 1;
+    // Imf::Array2D<Imf::Rgba> pixels;
+    // pixels.resizeErase(height, width);
+    // file.setFrameBuffer(&pixels[0][0] - dw.min.x - dw.min.y * width, 1, width);
+    // file.readPixels(dw.min.y, dw.max.y);
+
+    Imf::InputFile file(file_name);
+    Imath::Box2i dw = file.header().dataWindow();
+    int width = dw.max.x - dw.min.x + 1;
+    int height = dw.max.y - dw.min.y + 1;
+
+    half *hrgba = new half[4 * width * height];
+
+    // bool hasAlpha = true;
+    int nChannels = 4;
+
+    hrgba -= 4 * (dw.min.x + dw.min.y * width);
+    Imf::FrameBuffer frameBuffer;
+    frameBuffer.insert("R", Imf::Slice(Imf::HALF, (char *)hrgba+0*sizeof(half), 4*sizeof(half), width * 4 * sizeof(half), 1, 1, 0.0));
+    frameBuffer.insert("G", Imf::Slice(Imf::HALF, (char *)hrgba+1*sizeof(half), 4*sizeof(half), width * 4 * sizeof(half), 1, 1, 0.0));
+    frameBuffer.insert("B", Imf::Slice(Imf::HALF, (char *)hrgba+2*sizeof(half), 4*sizeof(half), width * 4 * sizeof(half), 1, 1, 0.0));
+    frameBuffer.insert("A", Imf::Slice(Imf::HALF, (char *)hrgba+3*sizeof(half), 4*sizeof(half), width * 4 * sizeof(half), 1, 1, 1.0));
+
+    file.setFrameBuffer(frameBuffer);
+    file.readPixels(dw.min.y, dw.max.y);
+
+    // copy to a float array
+    hrgba += 4 * (dw.min.x + dw.min.y * width);
+    float *rgba = new float[nChannels * width * height];
+    for (int i = 0; i < nChannels * width * height; ++i)
+        rgba[i] = hrgba[i];
+    delete[] hrgba;
+
+    // create the OpenGL texture
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA32F,
+        width,
+        height,
+        0,
+        GL_RGBA,
+        GL_FLOAT,
+        // &pixels[0][0]
+        rgba
+    );
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // is the following really needed?
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    delete[] rgba;
+
+
+    return texture;
+}
+
+
+
+// ====== PNG loading ======
+
 
 struct imgInfo {
     int width;
@@ -162,7 +249,7 @@ GLuint png_texture_load(const char *file_name) {
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    // free(img.image_data);
+    free(img.image_data);
     // *width  = img.width;
     // *height = img.height;
 
@@ -210,3 +297,5 @@ GLuint png_cubemap_load(const char *base_name) {
 
     return texture;
 }
+
+

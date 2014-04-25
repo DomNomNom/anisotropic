@@ -77,7 +77,7 @@ GLfloat material_specular[] = {8.8, 8.8, 8.8, 1.0};
 GLfloat material_shininess[] = {89};
 
 GLuint lightmap;
-GLuint texture_hammering;
+GLuint lightmap_hdr;
 
 int framecount = 0;
 int seconds_floor = 0;
@@ -107,6 +107,7 @@ void DisplayHandler() {
     // printf("tester %f\n", tester);
 
     glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D,       lightmap_hdr);
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP, lightmap);
 
     if (turntable) {
@@ -142,8 +143,9 @@ void DisplayHandler() {
         glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
         glUniform1f( glGetUniformLocation(shader.id(), "tester"),  tester);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
-        glUniform1i( glGetUniformLocation(shader.id(), "skybox"), 0); //Texture unit 0
-        glUniform1i( glGetUniformLocation(shader.id(), "numSamples"), numSamples); //Texture unit 0
+        glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
+        glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
+        glUniform1i( glGetUniformLocation(shader.id(), "numSamples"), numSamples);
         glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
         glUniform3fv(glGetUniformLocation(shader.id(), "eye"), 1, value_ptr(eye));
         glUniform4fv(glGetUniformLocation(shader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
@@ -268,7 +270,10 @@ int main(int argc, char** argv) {
         "shaders/shader.vert",
         "shaders/shader.frag"
     );
-    lightmap = png_cubemap_load("assets/beach_bright128/");
+
+    lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
+    lightmap = png_cubemap_load("assets/bright_dots/");
+    // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     glutMainLoop();
 
