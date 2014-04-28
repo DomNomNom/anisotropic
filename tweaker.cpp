@@ -55,13 +55,13 @@ unsigned int startSelectedBar = 0;
 float RoundToSignificantDigits(float a, int digits) {
   int   exp_base10 = round(log10(a));
   float man_base10 = a*pow(10.0, -exp_base10);
-  float factor     = pow(10.0,-digits+1);
+  float factor     = pow(10.0, -digits+1);
   float truncated_man_base10 = man_base10 - fmod(man_base10, factor);
-  float rounded_remainder    = fmod(man_base10,factor)/factor;
+  float rounded_remainder    = fmod(man_base10, factor)/factor;
 
   rounded_remainder = rounded_remainder > 0.5 ? 1.0*factor : 0.0;
 
-  return (truncated_man_base10 + rounded_remainder)*pow(10.0,exp_base10) ;
+  return (truncated_man_base10 + rounded_remainder)*pow(10.0, exp_base10) ;
 }
 
 float extremify(float x) {

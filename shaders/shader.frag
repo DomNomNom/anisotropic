@@ -16,7 +16,7 @@ uniform samplerCube lightmap;
 uniform sampler2D lightmap_hdr;
 
 uniform float time;
-uniform float tester;
+uniform float tester = 5.0;
 uniform vec2 mouse;
 uniform vec4 eye;
 
@@ -80,6 +80,15 @@ vec3 rand3D() {
 //     );
 // }
 
+vec4 sampleHdrLightmap(vec3 v) {
+    // TODO: special case when abs(v.z)+abs(v.x) == 0
+    // TODO: convert to cubemap?
+    v = normalize(v);
+    return 50.0 * texture(lightmap_hdr, vec2(
+        ( 0.5 / pi) * atan(v.z, v.x), // horizontal angle
+        (-1.0 / pi) * asin(v.y) - 0.5       // vertical angle
+    ));
+}
 
 // if v is not in the hemisphere in the direction of hemiDir
 // it will be mirrored along a plane defined by the normal hemiDir.
@@ -174,14 +183,14 @@ vec4 light(vec4 pos2light) {
     // return 10.0 * accumulator / numSamples;
 
 
-    for (int i=0; i<numSamples; ++i) {
-        vec3 reflectionNormal = normal + dot(0.9*rand3D(), biTangent) * biTangent;
-        accumulator += texture(lightmap, normalize(reflect(
-            cam2pos,
-            reflectionNormal
-        )));
-    }
-    return accumulator / numSamples;
+    // for (int i=0; i<numSamples; ++i) {
+    //     vec3 reflectionNormal = normal + dot(0.9*rand3D(), biTangent) * biTangent;
+    //     accumulator += texture(lightmap, normalize(reflect(
+    //         cam2pos,
+    //         reflectionNormal
+    //     )));
+    // }
+    // return accumulator / numSamples;
 
 
     // for (int i=0; i<numSamples; ++i) {
@@ -190,6 +199,7 @@ vec4 light(vec4 pos2light) {
     // }
     // return accumulator / numSamples;
 
+    return sampleHdrLightmap(reflect(cam2pos, normal));
     return texture(lightmap, reflect(cam2pos, normal));
 
 
@@ -210,7 +220,8 @@ vec4 light(vec4 pos2light) {
 }
 
 void main() {
-    pos2cam = vec4(normalize(-pos_view.xyz), 0.0);
+    // pos2cam = vec4(normalize(-pos_view.xyz), 0.0);
+    pos2cam = eye - pos_world;
 
     // normal = vec4(normalize(-pos_world.xyz), 0.0);
     vec4 modelNormal;
@@ -225,10 +236,11 @@ void main() {
     biTangent = normalize(vec3(cross(normal, tangent)));
 
     fragColor = light(lights[0]);
-    fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
-
+    // fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
 
     fragColor = 1.0 - exp(-exposure * fragColor);
+
+    // fragColor = eye;
 
     if (numSamples > availableSamples) {
         error = true;

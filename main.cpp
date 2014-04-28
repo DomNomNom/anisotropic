@@ -34,10 +34,14 @@ float window_xOffset;
 G308_Geometry* g_pGeometry = NULL;
 int objects; // size of g_pGeometry
 
+G308_Geometry skybox;
+
 Shader shader;
+Shader skyboxShader;
 bool useShader = true;
 
 vec3 UP = vec3(0, 1, 0);
+glm::vec4 eye; // camera position
 mat4 modelMatrix;
 mat4 viewMatrix;
 mat4 projectionMatrix;
@@ -49,12 +53,11 @@ float scaleFactor = 1.f;
 float seconds = 0.f; // since the start
 float mouse_x = 0.0;
 float mouse_y = 0.0;
-float tester = 0.0;
+float tester = 4.5;
 
 bool animated = false;
 bool turntable = false;
 
-glm::vec4 eye = glm::vec4(0.0, 0.0, 5.0, 1.0);
 glm::vec4 lightVectors[] = {
     normalize(  glm::vec4(  1.0, 1.0, 1.0, 0.0)), // directional (vector to light)
                 glm::vec4( -1.0, -1.0,-1.0, 1.0),  // point
@@ -101,11 +104,6 @@ void DisplayHandler() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,    material_specular);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS,   material_shininess);
 
-    tester = mouse_x - 0.5;
-    tester *= 20.0;
-    tester = tester*tester*tester*tester*tester;
-    // printf("tester %f\n", tester);
-
     glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D,       lightmap_hdr);
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP, lightmap);
@@ -120,14 +118,24 @@ void DisplayHandler() {
     // matrcies
     modelMatrix = mat4(1.0); // load identity
     modelMatrix = rotate(modelMatrix, 90.f, UP);
-    modelMatrix = rotate(modelMatrix, (mouse_y-0.5f) * 180.0f, vec3(0.0, 0.0, 1.0));
-    modelMatrix = rotate(modelMatrix,  turntableAngle, vec3(0.0, 1.0, 0.0));
+    // modelMatrix = rotate(modelMatrix, (mouse_y-0.5f) * 180.0f, vec3(0.0, 0.0, 1.0));
+    // modelMatrix = rotate(modelMatrix,  turntableAngle, vec3(0.0, 1.0, 0.0));
+
     // printf("omg %d\n", (mouse_y-0.5f) * 180.0f);
     // modelMatrix = rotate(modelMatrix, 0.1f *turntableAngle, UP);
     modelMatrix = scale(modelMatrix, vec3(1.5));
     // modelMatrix = translate(modelMatrix, vec3(0, 0, 0));
-    normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
+
+
+    // TODO: figure out what's going wrong if Y does a rotation > 180
+    eye = glm::vec4(0.0, 0.0, tester, 1.0);
+    mat4 eyeTransform = mat4(1.0);
+    eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
+    eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
+    eye = eyeTransform * eye;
     viewMatrix = lookAt(vec3(eye), vec3(0, 0, 0), UP);
+
+    normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
     projectionMatrix = perspective(
         60.0f,
         (float)window_wd / (float)window_ht,
@@ -135,6 +143,18 @@ void DisplayHandler() {
         100.f
     );
 
+    skyboxShader.bind();
+    glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap"),     0); //Texture unit 0
+    glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap_hdr"), 1); //Texture unit 1
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester); //Texture unit 1
+    glUniform4fv(glGetUniformLocation(skyboxShader.id(), "eye"), 1, value_ptr(eye));
+    glUniform4fv(glGetUniformLocation(skyboxShader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.id(), "modelMatrix"     ), 1, false, value_ptr(modelMatrix       ));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.id(), "viewMatrix"      ), 1, false, value_ptr(viewMatrix        ));
+    glUniformMatrix4fv(glGetUniformLocation(skyboxShader.id(), "projectionMatrix"), 1, false, value_ptr(projectionMatrix  ));
+    glUniformMatrix3fv(glGetUniformLocation(skyboxShader.id(), "normalMatrix"    ), 1, false, value_ptr(normalMatrix      ));
+    skybox.RenderGeometry();
+    skyboxShader.unbind();
 
     if (useShader) {
         shader.bind();
@@ -147,7 +167,7 @@ void DisplayHandler() {
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
         glUniform1i( glGetUniformLocation(shader.id(), "numSamples"), numSamples);
         glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
-        glUniform3fv(glGetUniformLocation(shader.id(), "eye"), 1, value_ptr(eye));
+        glUniform4fv(glGetUniformLocation(shader.id(), "eye"), 1, value_ptr(eye));
         glUniform4fv(glGetUniformLocation(shader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
         glUniformMatrix4fv(glGetUniformLocation(shader.id(), "modelMatrix"     ), 1, false, value_ptr(modelMatrix       ));
         glUniformMatrix4fv(glGetUniformLocation(shader.id(), "viewMatrix"      ), 1, false, value_ptr(viewMatrix        ));
@@ -157,6 +177,7 @@ void DisplayHandler() {
 
     }
 
+    // iterate over the geometries?
     g_pGeometry[0].RenderGeometry();
 
 
@@ -251,10 +272,13 @@ int main(int argc, char** argv) {
 
     g_pGeometry = new G308_Geometry[objects];
     for (int i=0; i<objects; ++i) {
-        g_pGeometry[i].ReadOBJ(argv[i+1]);        // 1) read OBJ function
-        g_pGeometry[i].CreateGLPolyGeometry();    // 2) create GL Geometry as polygon
-        g_pGeometry[i].CreateGLWireGeometry();    // 3) create GL Geometry as wireframe
+        g_pGeometry[i].ReadOBJ(argv[i+1]);
+        g_pGeometry[i].CreateGLPolyGeometry();
+        g_pGeometry[i].CreateGLWireGeometry();
     }
+
+    skybox.ReadOBJ("assets/box.obj");
+    skybox.CreateGLPolyGeometry();
 
     // initialize sampleDirections
     G308_Geometry *temp = new G308_Geometry();
@@ -270,10 +294,16 @@ int main(int argc, char** argv) {
         "shaders/shader.vert",
         "shaders/shader.frag"
     );
+    skyboxShader.init(
+        "shaders/shader.vert",
+        "shaders/skybox.frag"
+    );
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
-    lightmap = png_cubemap_load("assets/bright_dots/");
-    // lightmap = png_cubemap_load("assets/beach_bright128/");
+    // lightmap = png_cubemap_load("assets/bright_dots/");
+    lightmap = png_cubemap_load("assets/beach_bright128/");
+
+    tweak(&tester);
 
     glutMainLoop();
 
