@@ -15,8 +15,10 @@ smooth in vec4 lights[4];
 uniform samplerCube lightmap;
 uniform sampler2D lightmap_hdr;
 
+uniform float exposure = 1.0;
 uniform float time;
 uniform float tester = 5.0;
+uniform float tester2;
 uniform vec2 mouse;
 uniform vec4 eye;
 
@@ -36,8 +38,6 @@ const float sqrt_pi = sqrt(pi);
 const vec3 light_ambient  = vec3(1.0, 1.0, 1.0) * 0.03;
 const vec3 light_diffuse  = vec3(1.0, 0.0, 0.0) * 1.0;
 const vec3 light_specular = vec3(1.0, 1.0, 1.0) * 1.0;
-
-const float exposure = 1.0;
 
 bool error = false; // if true the shader will return the error colour (blue) at the end
 
@@ -92,7 +92,7 @@ vec4 sampleHdrLightmap(vec3 v) {
 
 // if v is not in the hemisphere in the direction of hemiDir
 // it will be mirrored along a plane defined by the normal hemiDir.
-// we assume v and hemiDir are normalized
+// we assume v and hemiDir are of length 1
 vec3 hemisphere(vec3 v, vec3 hemiDir) {
     float d = dot(v, hemiDir);
     if (d < 0) {
@@ -104,23 +104,12 @@ vec3 hemisphere(vec3 v, vec3 hemiDir) {
 // https://developer.blender.org/file/data/aqyezezn632wm4nxw5mc/PHID-FILE-ue4z6fkynybg3bmmcoeu/Ashikhmin_final.txt
 /* Ashikhmin anisotropic specular*/
 float Ashikhmin_Spec(vec3 n, vec3 l, vec3 v, float roughu, float roughv, float spec_shader) {
-    // float i, nh, nl, nv, hv, hu, hw, hl,
     float fresnel_frac, div, exp=0.0;
 
     /* half-way vector */
     vec3 h = normalize(l + v);
 
     vec3 w, u; /* tangent & biTangent vectors */
-    // /* TODO: select main anisotropic axis */
-    // if (n.x == 0.0 && n.z==0.0) {
-    //     u = vec3(0.0, (n.y<0.0) ? -1.0 : 1.0, 0.0);
-    //     w = vec3(0.0, 0.0, 1.0);
-    // }
-    // else {
-    //     float d = 1.0 / sqrt(n.z*n.z + n.x*n.x);
-    //     u = vec3(n.z * d, 0.0, -n.x * d);
-    //     w = normalize(cross(u, n));
-    // }
     w = tangent;
     u = biTangent;
 
@@ -137,25 +126,64 @@ float Ashikhmin_Spec(vec3 n, vec3 l, vec3 v, float roughu, float roughv, float s
     if (nv <= 0.0) nv = 0.0;
     if (hl <= 0.0) hl = 0.0;
     if (hv <= 0.0) hv = 0.0;
+    // return nl;
 
-    return nl;
 
     /* Schlick's approximation to Fresnel fraction */
     if (spec_shader > 1.0) spec_shader = 1.0;
     fresnel_frac = spec_shader + ((1.0 - spec_shader) * pow((1.0 - max(hv,hl)), 5));
-    // return fresnel_frac;
+    // return fresnel_frac * 100000.0;
 
     /* Anisotropic Phong model */
     div = 1.0 - pow(nh, 2);
     if (div > 0.0) {
-        exp = ((roughu * hu * hu) + (roughv * hw *hw)) / div;
+        exp = ((roughu * hu*hu) + (roughv * hw*hw)) / div;
     }
 
     return (
-        nl *
-        (sqrt((roughu + 1.0)*(roughv + 1.0)) / (8.0 * pi * (max(hv,hl) * max(nv,nl)))) *
-        pow(nh,exp) //* fresnel_frac
+        // nl *
+        (sqrt((roughu + 1.0)*(roughv + 1.0)) / (8.0 * pi * (max(hv,hl) * max(nv,nl))))
+        // pow(nh,exp) //* fresnel_frac
     );
+}
+
+// squares a number
+float sq(float x) {
+    return x * x;
+}
+
+// http://en.wikipedia.org/wiki/Specular_highlight#Ward_anisotropic_distribution
+//
+float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
+    vec3 h = normalize(l+r);
+
+    float nl = dot(n, l);
+    float nr = dot(n, r);
+    if (nl < 0.0) return 0.0;
+    if (nr < 0.0) return 0.0;
+
+    // keeping in same notation
+    vec3 x = tangent;
+    vec3 y = biTangent;
+
+    return (
+        (1.0 / sqrt(nl * nr)) *
+        nl / (4.0 * pi * ax * ay) *
+        exp(-2.0 * (
+            (
+                sq(dot(h, x) / ax) +
+                sq(dot(h, y) / ay)
+            )
+            / (1.0 + dot(h, n))
+        ))
+    );
+}
+
+// takes a lightmap sample in the given direction
+// this function exists to make it easy to switch between lightmaps
+vec4 sample(vec3 dir) {
+    return texture(lightmap, dir);
+    return sampleHdrLightmap(dir);
 }
 
 vec4 light(vec4 pos2light) {
@@ -174,15 +202,19 @@ vec4 light(vec4 pos2light) {
 
     vec4 accumulator = vec4(0.0);
 
-    // for (int i=0; i<numSamples; ++i) {
-    //     // vec3 sampleDir = sampleDirections[i];
-    //     vec3 sampleDir = rand3D();
-    //     sampleDir = hemisphere(sampleDir, normal);
-    //     accumulator += texture(lightmap, sampleDir) * Ashikhmin_Spec(normal, sampleDir, cam2pos, 1.0, 0.0, 0.1);
-    // }
-    // return 10.0 * accumulator / numSamples;
+    for (int i=0; i<numSamples; ++i) {
+        // vec3 sampleDir = sampleDirections[i];
+        vec3 sampleDir = rand3D();
+        sampleDir = hemisphere(sampleDir, normal);
+        if (dot(normal, sampleDir) < 0)
+            error = true;
+        // accumulator += sample(sampleDir) * dot(normal, sampleDir);
+        // accumulator += sample(sampleDir) * Ashikhmin_Spec(normal, sampleDir, normalize(pos2cam.xyz), 100.0, 100.0, 0.5);
+        accumulator += sample(sampleDir) * ward_spec(normal, sampleDir, normalize(pos2cam.xyz), tester, tester2);
+    }
+    return 10.0 * accumulator / numSamples;
 
-
+    // // sampling by varying-the-normal approach.
     // for (int i=0; i<numSamples; ++i) {
     //     vec3 reflectionNormal = normal + dot(0.9*rand3D(), biTangent) * biTangent;
     //     accumulator += texture(lightmap, normalize(reflect(
@@ -199,8 +231,7 @@ vec4 light(vec4 pos2light) {
     // }
     // return accumulator / numSamples;
 
-    return sampleHdrLightmap(reflect(cam2pos, normal));
-    return texture(lightmap, reflect(cam2pos, normal));
+    return sample(reflect(cam2pos, normal));
 
 
     // phong

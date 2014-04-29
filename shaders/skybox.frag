@@ -15,6 +15,7 @@ smooth in vec4 lights[4];
 uniform samplerCube lightmap;
 uniform sampler2D lightmap_hdr;
 
+uniform float exposure = 1.0;
 uniform float time;
 uniform float tester;
 uniform vec2 mouse;
@@ -29,7 +30,6 @@ const float pi = 3.141592653589793;
 const float sqrt_2 = sqrt(2.0);
 const float sqrt_pi = sqrt(pi);
 
-const float exposure = 1.0;
 
 
 vec4 pos2cam; // world space
@@ -50,13 +50,19 @@ vec4 sampleHdrLightmap(vec3 v) {
     ));
 }
 
+// takes a lightmap sample in the given direction
+// this function exists to make it easy to switch between lightmaps
+vec4 sample(vec3 dir) {
+    return texture(lightmap, dir);
+    return sampleHdrLightmap(dir);
+}
 
 void main() {
     pos2cam = eye - pos_world;
 
 
     // fragColor = texture(lightmap, -pos2cam.xyz);
-    fragColor = sampleHdrLightmap(-pos2cam.xyz);
+    fragColor = sample(-pos2cam.xyz);
     fragColor = 1.0 - exp(-exposure * fragColor);
 
     // fragColor = vec4(0.0, 1.0, 0.0, 1.0);

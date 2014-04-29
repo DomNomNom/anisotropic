@@ -49,11 +49,14 @@ mat3 normalMatrix;
 
 float turntableAngle = 0.f;
 float scaleFactor = 1.f;
+float cameraDistance = 4.5;
+float exposure = 1.f;
 
 float seconds = 0.f; // since the start
 float mouse_x = 0.0;
 float mouse_y = 0.0;
-float tester = 4.5;
+float tester = 0.5;
+float tester2 = 0.1;
 
 bool animated = false;
 bool turntable = false;
@@ -128,7 +131,7 @@ void DisplayHandler() {
 
 
     // TODO: figure out what's going wrong if Y does a rotation > 180
-    eye = glm::vec4(0.0, 0.0, tester, 1.0);
+    eye = glm::vec4(0.0, 0.0, cameraDistance, 1.0);
     mat4 eyeTransform = mat4(1.0);
     eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
     eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
@@ -144,9 +147,10 @@ void DisplayHandler() {
     );
 
     skyboxShader.bind();
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester);
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure"), exposure);
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap_hdr"), 1); //Texture unit 1
-    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester); //Texture unit 1
     glUniform4fv(glGetUniformLocation(skyboxShader.id(), "eye"), 1, value_ptr(eye));
     glUniform4fv(glGetUniformLocation(skyboxShader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
     glUniformMatrix4fv(glGetUniformLocation(skyboxShader.id(), "modelMatrix"     ), 1, false, value_ptr(modelMatrix       ));
@@ -161,7 +165,9 @@ void DisplayHandler() {
 
         // set shader variables
         glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
-        glUniform1f( glGetUniformLocation(shader.id(), "tester"),  tester);
+        glUniform1f( glGetUniformLocation(shader.id(), "tester" ),  tester);
+        glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
+        glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
@@ -300,10 +306,12 @@ int main(int argc, char** argv) {
     );
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
-    // lightmap = png_cubemap_load("assets/bright_dots/");
-    lightmap = png_cubemap_load("assets/beach_bright128/");
+    lightmap = png_cubemap_load("assets/bright_dots/");
+    // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     tweak(&tester);
+    tweak(&tester2);
+    tweak(&exposure);
 
     glutMainLoop();
 
