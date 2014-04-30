@@ -46,6 +46,7 @@ mat4 modelMatrix;
 mat4 viewMatrix;
 mat4 projectionMatrix;
 mat3 normalMatrix;
+mat4 eyeTransform;
 
 float turntableAngle = 0.f;
 float scaleFactor = 1.f;
@@ -55,9 +56,10 @@ float exposure = 1.f;
 float seconds = 0.f; // since the start
 float mouse_x = 0.0;
 float mouse_y = 0.0;
-float tester = 0.5;
-float tester2 = 0.1;
+float tester = 0.1;
+float tester2 = 0.5;
 
+bool viewLock = false;
 bool animated = false;
 bool turntable = false;
 
@@ -68,7 +70,7 @@ glm::vec4 lightVectors[] = {
     normalize(  glm::vec4(  0.0, -1.0, 0.0, 0.0)), // spotDir
 };
 
-const int numSamples = 162;
+const int numSamples = 100;//162;
 glm::vec4 sampleDirections[numSamples];
 
 
@@ -131,10 +133,12 @@ void DisplayHandler() {
 
 
     // TODO: figure out what's going wrong if Y does a rotation > 180
+    if (!viewLock) {
+        eyeTransform = mat4(1.0);
+        eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
+        eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
+    }
     eye = glm::vec4(0.0, 0.0, cameraDistance, 1.0);
-    mat4 eyeTransform = mat4(1.0);
-    eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
-    eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
     eye = eyeTransform * eye;
     viewMatrix = lookAt(vec3(eye), vec3(0, 0, 0), UP);
 
@@ -212,8 +216,11 @@ void MouseMoveHander(int x, int y){
     mouse_y = y / (float)window_ht;
 }
 
-void MouseHandler(int, int , int, int) {
-    glutPostRedisplay();
+void MouseHandler(int, int state, int, int) {
+    if (state == GLUT_DOWN) {
+        viewLock  = !viewLock;
+    }
+    // glutPostRedisplay();
 }
 
 
@@ -227,10 +234,11 @@ void KeyHandler(unsigned char key, int, int) {
             useShader = !useShader;
             break;
         case 'a': animated  = !animated;    break;
+        // case 'l': viewLock  = !viewLock;    break;
         case 't': turntable = !turntable;   break;
     }
 
-    glutPostRedisplay();
+    // glutPostRedisplay();
 }
 
 void AnimateScene(void) {

@@ -53,8 +53,8 @@ vec4 sampleHdrLightmap(vec3 v) {
 // takes a lightmap sample in the given direction
 // this function exists to make it easy to switch between lightmaps
 vec4 sample(vec3 dir) {
-    return texture(lightmap, dir);
     return sampleHdrLightmap(dir);
+    return texture(lightmap, dir);
 }
 
 void main() {

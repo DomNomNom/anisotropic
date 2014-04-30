@@ -182,8 +182,8 @@ float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
 // takes a lightmap sample in the given direction
 // this function exists to make it easy to switch between lightmaps
 vec4 sample(vec3 dir) {
-    return texture(lightmap, dir);
     return sampleHdrLightmap(dir);
+    return texture(lightmap, dir);
 }
 
 vec4 light(vec4 pos2light) {
@@ -202,27 +202,32 @@ vec4 light(vec4 pos2light) {
 
     vec4 accumulator = vec4(0.0);
 
-    for (int i=0; i<numSamples; ++i) {
-        // vec3 sampleDir = sampleDirections[i];
-        vec3 sampleDir = rand3D();
-        sampleDir = hemisphere(sampleDir, normal);
-        if (dot(normal, sampleDir) < 0)
-            error = true;
-        // accumulator += sample(sampleDir) * dot(normal, sampleDir);
-        // accumulator += sample(sampleDir) * Ashikhmin_Spec(normal, sampleDir, normalize(pos2cam.xyz), 100.0, 100.0, 0.5);
-        accumulator += sample(sampleDir) * ward_spec(normal, sampleDir, normalize(pos2cam.xyz), tester, tester2);
-    }
-    return 10.0 * accumulator / numSamples;
-
-    // // sampling by varying-the-normal approach.
+    // // sample the lightmap and multiply by the BDRF
     // for (int i=0; i<numSamples; ++i) {
-    //     vec3 reflectionNormal = normal + dot(0.9*rand3D(), biTangent) * biTangent;
-    //     accumulator += texture(lightmap, normalize(reflect(
-    //         cam2pos,
-    //         reflectionNormal
-    //     )));
+    //     // vec3 sampleDir = sampleDirections[i];
+    //     vec3 sampleDir = rand3D();
+    //     sampleDir = hemisphere(sampleDir, normal);
+    //     // if (dot(normal, sampleDir) < 0)
+    //     //     error = true;
+    //     // accumulator += sample(sampleDir) * dot(normal, sampleDir);
+    //     // accumulator += sample(sampleDir) * Ashikhmin_Spec(normal, sampleDir, normalize(pos2cam.xyz), 100.0, 100.0, 0.5);
+    //     accumulator += sample(sampleDir) * ward_spec(normal, sampleDir, normalize(pos2cam.xyz), tester, tester2);
     // }
-    // return accumulator / numSamples;
+    // return 10.0 * accumulator / numSamples;
+
+    // sampling by varying-the-normal approach.
+    for (int i=0; i<numSamples; ++i) {
+        vec3 reflectionNormal = normal + tester * rand() * biTangent; //dot(0.9*rand3D(), biTangent) * biTangent;
+        reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
+        vec3 reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
+
+        // two ways to deal with normals that reflet into the surface (reflect along normal or make the sample be zero)
+        if (dot(reflectedDir, normal) >= 0) accumulator += sample(reflectedDir);
+
+        // reflectedDir = hemisphere(reflectedDir, normal);
+        // accumulator += sample(reflectedDir);
+    }
+    return accumulator / numSamples;
 
 
     // for (int i=0; i<numSamples; ++i) {
@@ -273,9 +278,9 @@ void main() {
 
     // fragColor = eye;
 
-    if (numSamples > availableSamples) {
-        error = true;
-    }
+    // if (numSamples > availableSamples) {
+    //     error = true;
+    // }
     if (error) {
         fragColor = vec4(0.0, 0.0, 1.0, 1.0);
     }
