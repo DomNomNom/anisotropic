@@ -58,6 +58,7 @@ float mouse_x = 0.0;
 float mouse_y = 0.0;
 float tester = 0.1;
 float tester2 = 0.5;
+int tester_int = 0;
 
 bool viewLock = false;
 bool animated = false;
@@ -151,8 +152,9 @@ void DisplayHandler() {
     );
 
     skyboxShader.bind();
-    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester);
+
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure"), exposure);
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester);
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap_hdr"), 1); //Texture unit 1
     glUniform4fv(glGetUniformLocation(skyboxShader.id(), "eye"), 1, value_ptr(eye));
@@ -171,6 +173,7 @@ void DisplayHandler() {
         glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
         glUniform1f( glGetUniformLocation(shader.id(), "tester" ),  tester);
         glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
+        glUniform1i( glGetUniformLocation(shader.id(), "tester_int"), tester_int);
         glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
@@ -234,8 +237,9 @@ void KeyHandler(unsigned char key, int, int) {
             useShader = !useShader;
             break;
         case 'a': animated  = !animated;    break;
-        // case 'l': viewLock  = !viewLock;    break;
         case 't': turntable = !turntable;   break;
+        case '[': tester_int -= 1;          break;
+        case ']': tester_int += 1;          break;
     }
 
     // glutPostRedisplay();

@@ -19,6 +19,7 @@ uniform float exposure = 1.0;
 uniform float time;
 uniform float tester = 5.0;
 uniform float tester2;
+uniform int tester_int;
 uniform vec2 mouse;
 uniform vec4 eye;
 
@@ -66,19 +67,33 @@ vec3 rand3D() {
     return vec3(rand(), rand(), rand());
 }
 
-// // http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/
-// mat4 rotationMatrix(vec3 axis, float angle) {;
-//     axis = normalize(axis);
-//     float s = sin(angle);
-//     float c = cos(angle);
-//     float oc = 1.0 - c;
-//     return mat4(
-//         oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0.0,
-//         oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0.0,
-//         oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0.0,
-//         0.0, 0.0, 0.0, 1.0
-//     );
-// }
+// http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/
+// angle in radians (default GLSL)
+mat4 rotationMatrix(vec3 axis, float angle) {;
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    return mat4(
+        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0.0,
+        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0.0,
+        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+}
+
+// 3x3 version of the above
+mat3 rotationMatrix3(vec3 axis, float angle) {
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    return mat3(
+        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
+        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
+        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
+    );
+}
 
 vec4 sampleHdrLightmap(vec3 v) {
     // TODO: special case when abs(v.z)+abs(v.x) == 0
@@ -153,7 +168,6 @@ float sq(float x) {
 }
 
 // http://en.wikipedia.org/wiki/Specular_highlight#Ward_anisotropic_distribution
-//
 float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
     vec3 h = normalize(l+r);
 
@@ -216,13 +230,28 @@ vec4 light(vec4 pos2light) {
     // return 10.0 * accumulator / numSamples;
 
     // sampling by varying-the-normal approach.
+    vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
     for (int i=0; i<numSamples; ++i) {
-        vec3 reflectionNormal = normal + tester * rand() * biTangent; //dot(0.9*rand3D(), biTangent) * biTangent;
-        reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
-        vec3 reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
+        vec3 reflectedDir;
 
-        // two ways to deal with normals that reflet into the surface (reflect along normal or make the sample be zero)
-        if (dot(reflectedDir, normal) >= 0) accumulator += sample(reflectedDir);
+        if (tester_int == 0) {
+            // varied normal approach
+            vec3 reflectionNormal = normal + tester * rand() * biTangent; //dot(0.9*rand3D(), biTangent) * biTangent;
+            reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
+            reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
+        }
+        else {
+            // sampled arc approach
+            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * tester) * normalReflectedDir;
+        }
+
+        // two ways to deal reflected vectors that go into the surface (reflect along normal or make the sample be zero)
+        if (dot(reflectedDir, normal) >= 0) {
+            accumulator += sample(reflectedDir);
+        }
+        else {
+            error = true;
+        }
 
         // reflectedDir = hemisphere(reflectedDir, normal);
         // accumulator += sample(reflectedDir);

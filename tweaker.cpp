@@ -64,6 +64,12 @@ float RoundToSignificantDigits(float a, int digits) {
   return (truncated_man_base10 + rounded_remainder)*pow(10.0, exp_base10) ;
 }
 
+double round_to_digits(double value, int digits)
+{
+    double factor = pow(10.0, digits - ceil(log10(fabs(value))));
+    return round(value * factor) / factor;
+}
+
 float extremify(float x) {
     bool negative = (x < 0.0);
     if (negative) x *= -1.0;
@@ -72,7 +78,7 @@ float extremify(float x) {
     x -= 1.0;
     x *= 0.1;
     x *= x;
-    x = RoundToSignificantDigits(x, 2);
+    x = round_to_digits(x, 2);
     if (negative) x *= -1.0;
     return x;
 }
