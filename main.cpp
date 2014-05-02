@@ -309,12 +309,12 @@ int main(int argc, char** argv) {
     delete temp;
 
     shader.init(
-        "shaders/shader.vert",
-        "shaders/shader.frag"
+        "shader.vert",
+        "shader.frag"
     );
     skyboxShader.init(
-        "shaders/shader.vert",
-        "shaders/skybox.frag"
+        "shader.vert",
+        "skybox.frag"
     );
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");

@@ -3,6 +3,10 @@
 out vec4 fragColor;
 
 
+#include constants.glsl
+#include sampleLightmap.frag
+
+
 smooth in vec4 pos_view;
 smooth in vec4 pos_world;
 smooth in vec4 pos_model;
@@ -11,9 +15,6 @@ smooth in vec4 pos_screen;
 smooth in vec4 vertex_normal;
 smooth in vec4 lights[4];
 // varying vec4 tangent;
-
-uniform samplerCube lightmap;
-uniform sampler2D lightmap_hdr;
 
 uniform float exposure = 1.0;
 uniform float time;
@@ -30,11 +31,6 @@ uniform mat3 normalMatrix;
 const int availableSamples = 162;
 uniform int numSamples;
 uniform vec3[availableSamples] sampleDirections;
-
-// common constants
-const float pi = 3.141592653589793;
-const float sqrt_2 = sqrt(2.0);
-const float sqrt_pi = sqrt(pi);
 
 const vec3 light_ambient  = vec3(1.0, 1.0, 1.0) * 0.03;
 const vec3 light_diffuse  = vec3(1.0, 0.0, 0.0) * 1.0;
@@ -93,16 +89,6 @@ mat3 rotationMatrix3(vec3 axis, float angle) {
         oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
         oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
     );
-}
-
-vec4 sampleHdrLightmap(vec3 v) {
-    // TODO: special case when abs(v.z)+abs(v.x) == 0
-    // TODO: convert to cubemap?
-    v = normalize(v);
-    return 50.0 * texture(lightmap_hdr, vec2(
-        ( 0.5 / pi) * atan(v.z, v.x), // horizontal angle
-        (-1.0 / pi) * asin(v.y) - 0.5       // vertical angle
-    ));
 }
 
 // if v is not in the hemisphere in the direction of hemiDir
@@ -193,13 +179,6 @@ float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
     );
 }
 
-// takes a lightmap sample in the given direction
-// this function exists to make it easy to switch between lightmaps
-vec4 sample(vec3 dir) {
-    return sampleHdrLightmap(dir);
-    return texture(lightmap, dir);
-}
-
 vec4 light(vec4 pos2light) {
     pos2light = normalize(pos2light);
     vec3 cam2pos = -pos2cam.xyz;
@@ -249,9 +228,10 @@ vec4 light(vec4 pos2light) {
         if (dot(reflectedDir, normal) >= 0) {
             accumulator += sample(reflectedDir);
         }
-        else {
-            error = true;
-        }
+        // else {
+        //     // error = true;
+        //     accumulator += vec4(1.0, 0.0, 0.0, 0.0);
+        // }
 
         // reflectedDir = hemisphere(reflectedDir, normal);
         // accumulator += sample(reflectedDir);

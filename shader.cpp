@@ -1,34 +1,60 @@
 #define GL_GLEXT_PROTOTYPES
 
-#include "shader.h"
-#include <string.h>
+#include <string>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-using namespace std;
+#include "shader.h"
 
-static char* textFileRead(const char *fileName) {
-    char* text;
 
-    if (fileName != NULL) {
-        FILE *file = fopen(fileName, "rt");
 
-        if (file != NULL) {
-            fseek(file, 0, SEEK_END);
-            int count = ftell(file);
-            rewind(file);
 
-            if (count > 0) {
-                text = (char*)malloc(sizeof(char) * (count + 1));
-                count = fread(text, sizeof(char), count, file);
-                text[count] = '\0';
-            }
-            fclose(file);
-        }
-    }
-    return text;
+// http://stackoverflow.com/questions/1798112/removing-leading-and-trailing-spaces-from-a-string
+static std::string trim(const std::string& str) {
+    const std::string whitespace = " \t\n\r";
+
+    const unsigned int strBegin = str.find_first_not_of(whitespace);
+    if (strBegin == std::string::npos)
+        return ""; // no content
+
+    const unsigned int strEnd = str.find_last_not_of(whitespace);
+    const unsigned int strRange = strEnd - strBegin + 1;
+
+    return str.substr(strBegin, strRange);
 }
+
+static const std::string preprocess(const std::string &fileName) {
+    std::string filePath = std::string("shaders/") + trim(fileName);
+    std::stringstream output;
+    std::ifstream file(filePath.c_str());
+    if (file.fail()) {
+        std::cout << " ====== Shader file not found: '" << filePath << "' ====== " << std::endl;
+    }
+
+    std::string line;
+    const std::string prefix = "#include ";
+    unsigned int line_number = 1;
+    while(std::getline(file,line)) {
+        if (line.find(prefix) == 0) {
+            output << preprocess(line.substr(prefix.length())) << std::endl;
+        }
+        else {
+            output << "#line "<< line_number << " \"" << fileName << "\""  << std::endl;
+            output <<  line << std::endl;
+        }
+        ++line_number;
+    }
+
+    return output.str();
+}
+
+
 
 static void validateShader(GLuint shader, const char* file = 0) {
     const unsigned int BUFFER_SIZE = 512;
@@ -38,7 +64,7 @@ static void validateShader(GLuint shader, const char* file = 0) {
 
     glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
     if (length > 0) {
-        cerr << "Shader " << shader << " (" << (file?file:"") << ") compile error: " << buffer << endl;
+        std::cerr << "Shader " << shader << " (" << (file?file:"") << ") compile error: " << buffer << std::endl;
     }
 }
 
@@ -51,13 +77,13 @@ static void validateProgram(GLuint program) {
     memset(buffer, 0, BUFFER_SIZE);
     glGetProgramInfoLog(program, BUFFER_SIZE, &length, buffer);
     if (length > 0)
-        cerr << "Program " << program << " link error: " << buffer << endl;
+        std::cerr << "Program " << program << " link error: " << buffer << std::endl;
 
     glValidateProgram(program);
     GLint status;
     glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
     if (status == GL_FALSE)
-        cerr << "Error validating shader " << program << endl;
+        std::cerr << "Error validating shader " << program << std::endl;
 }
 
 Shader::Shader() {
@@ -72,16 +98,14 @@ void Shader::init(const char *vsFile, const char *fsFile) {
     shader_vp = glCreateShader(GL_VERTEX_SHADER);
     shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
 
-    const char* vsText = textFileRead(vsFile);
-    const char* fsText = textFileRead(fsFile);
+    const std::string vsText = preprocess(std::string(vsFile));
+    const std::string fsText = preprocess(std::string(fsFile));
 
-    if (vsText == NULL || fsText == NULL) {
-        cerr << "Either vertex shader or fragment shader file not found." << endl;
-        return;
-    }
+    const char *vsp = vsText.c_str();
+    const char *fsp = fsText.c_str();
 
-    glShaderSource(shader_vp, 1, &vsText, 0);
-    glShaderSource(shader_fp, 1, &fsText, 0);
+    glShaderSource(shader_vp, 1, &vsp, 0);
+    glShaderSource(shader_fp, 1, &fsp, 0);
 
     glCompileShader(shader_vp);
     validateShader(shader_vp, vsFile);
@@ -93,6 +117,7 @@ void Shader::init(const char *vsFile, const char *fsFile) {
     glAttachShader(shader_id, shader_vp);
     glLinkProgram(shader_id);
     validateProgram(shader_id);
+
 }
 
 Shader::~Shader() {
