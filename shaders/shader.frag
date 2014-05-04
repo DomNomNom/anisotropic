@@ -49,6 +49,9 @@ vec4  to01(vec4  neg11) {   return (neg11 + vec4(1.0)) * 0.5;   }
 vec3  to01(vec3  neg11) {   return (neg11 + vec3(1.0)) * 0.5;   }
 float to01(float neg11) {   return (neg11 +      1.0 ) * 0.5;   }
 
+float sq(float x) {  return x * x;  }  // squares a number
+
+
 vec2 randomV = pos_screen.xy * sin(time);
 float rand() { // returns a random value within the range -1.0 to 1.0
     float random = fract(sin(dot(randomV.xy, vec2(12.9898, 78.233)))* 43758.5453)  *2.0 - 1.0;
@@ -148,10 +151,6 @@ float Ashikhmin_Spec(vec3 n, vec3 l, vec3 v, float roughu, float roughv, float s
     );
 }
 
-// squares a number
-float sq(float x) {
-    return x * x;
-}
 
 // http://en.wikipedia.org/wiki/Specular_highlight#Ward_anisotropic_distribution
 float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
@@ -215,7 +214,7 @@ vec4 light(vec4 pos2light) {
 
         if (tester_int == 0) {
             // varied normal approach
-            vec3 reflectionNormal = normal + tester * rand() * biTangent; //dot(0.9*rand3D(), biTangent) * biTangent;
+            vec3 reflectionNormal = normal + tester * rand() * biTangent;
             reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
             reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
         }
