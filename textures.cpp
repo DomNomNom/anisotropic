@@ -288,9 +288,8 @@ GLuint exr_texture_load(const char *file_name) {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // is the following really needed?
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     delete[] rgba;
 
@@ -301,7 +300,7 @@ GLuint exr_texture_load(const char *file_name) {
 
 // ====== EXR saving ======
 
-void writeRgba1(const char fileName[], const Imf::Rgba *pixels, int width, int height) {
+void exr_texture_save(const char fileName[], const Imf::Rgba *pixels, int width, int height) {
   Imf::RgbaOutputFile file(fileName, width, height, Imf::WRITE_RGBA);
   file.setFrameBuffer(pixels, 1, width);
   file.writePixels(height);

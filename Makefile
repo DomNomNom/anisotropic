@@ -9,12 +9,16 @@ SRC = ./
 
 
 
-all: $(BUILD)anisotropic $(BUILD)buildCache
+all: $(BUILD)anisotropic $(BUILD)buildCache $(BUILD)exrViewer
+
 
 $(BUILD)anisotropic: $(BUILD)main.o $(BUILD)G308_Geometry.o $(BUILD)mytime.o $(BUILD)shader.o $(BUILD)textures.o $(BUILD)tweaker.o
 	$(CC) -o $@ $^ -lm -lGL -lglut -lGLU -lpng -lHalf -lIlmImf $(LPATH) $(LDPATH)
 
 $(BUILD)buildCache: $(BUILD)buildCache.o $(BUILD)G308_Geometry.o $(BUILD)mytime.o $(BUILD)shader.o $(BUILD)textures.o $(BUILD)tweaker.o
+	$(CC) -o $@ $^ -lm -lGL -lglut -lGLU -lpng -lHalf -lIlmImf $(LPATH) $(LDPATH)
+
+$(BUILD)exrViewer: $(BUILD)exrViewer.o $(BUILD)G308_Geometry.o $(BUILD)mytime.o $(BUILD)shader.o $(BUILD)textures.o $(BUILD)tweaker.o
 	$(CC) -o $@ $^ -lm -lGL -lglut -lGLU -lpng -lHalf -lIlmImf $(LPATH) $(LDPATH)
 
 

@@ -51,7 +51,7 @@ mat4 eyeTransform;
 float turntableAngle = 0.f;
 float scaleFactor = 1.f;
 float cameraDistance = 4.5;
-float exposure = 1.f;
+float exposure = 100.f;
 
 float seconds = 0.f; // since the start
 float mouse_x = 0.0;
@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
     // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     tweak(&tester);
-    tweak(&tester2);
+    // tweak(&tester2);
     tweak(&exposure);
 
     glutMainLoop();

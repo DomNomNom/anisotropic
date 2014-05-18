@@ -39,6 +39,7 @@ void main() {
 
 
     fragColor = sample(gammaTransform * betaTransform * alphaTransform * normal);
+    // fragColor = 1.0 - exp(-1 * fragColor);
     // fragColor = vec4(hello, 0.0, 0.0, 1.0);
 
     // fragColor = sample(normalize(vec3(1.0, pos.y, 0.0)));
