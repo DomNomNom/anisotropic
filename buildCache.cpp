@@ -13,8 +13,7 @@ const int width  = 256 * 2;
 const int height = 256 * 2;
 const float pi = 3.141592653589793;
 
-Imf::Rgba pixelData[width * height];
-float pixelData_float[width * height * 4];
+float pixelData[width * height * 4];
 
 float mouse_x = 0.0;
 float mouse_y = 0.0;
@@ -89,6 +88,10 @@ void displayHandler() {
 
     shader.unbind();
 
+    // save output
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, pixelData);
+    exr_texture_save("assets/cache/test.exr", pixelData, width, height);
+
 
     // display the framebuffer
     glEnable(GL_TEXTURE_2D);
@@ -105,30 +108,6 @@ void displayHandler() {
     glColor4f(1,1,1,1);
     drawWindowSizedQuad();
     glDisable(GL_TEXTURE_2D);
-
-    // save output
-    glReadPixels(0,0, width, height, GL_RGBA, GL_HALF_FLOAT, pixelData);
-    // glReadPixels(0,0, width, height, GL_RGBA, GL_FLOAT, pixelData_float);
-    // for (int i=0; i<width*height; ++i) {
-    //     pixelData[i].r = pixelData_float[i*4 + 0];
-    //     pixelData[i].g = pixelData_float[i*4 + 1];
-    //     pixelData[i].b = pixelData_float[i*4 + 2];
-    //     pixelData[i].a = pixelData_float[i*4 + 3];
-    // }
-    glReadPixels(0,0, width, height, GL_RGBA, GL_FLOAT, pixelData_float);
-    // int zeros = 0;
-    // for (int i=0; i<width*height; ++i) {
-    //     float sum = (
-    //         pixelData_float[i*4 + 0] +
-    //         pixelData_float[i*4 + 1] +
-    //         pixelData_float[i*4 + 2]
-    //     //  pixelData_float[i*4 + 3]
-    //     );
-    //     if (sum == 0.f) zeros += 1;
-    // }
-    // printf("minmax %f\n", zeros / float(width*height));
-    exr_texture_save("assets/cache/test.exr", pixelData, width, height);
-
 
     glutSwapBuffers();
 
@@ -147,7 +126,7 @@ void keyHandler(unsigned char key, int, int) {
     }
 }
 
-void mouseMoveHander(int x, int y){
+void mouseMoveHander(int x, int y) {
     mouse_x = x / (float) width ;
     mouse_y = y / (float) height;
 }
@@ -169,11 +148,6 @@ int main(int argc, char** argv) {
         "buildCache.frag"
     );
 
-    // float foo = 5.123456789;
-    // // half bar = foo;
-    // // foo =  bar;
-    // printf("hai %f\n", foo);
-
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     lightmap     = png_cubemap_load("assets/bright_dots/");
     // lightmap  = png_cubemap_load("assets/beach_bright128/");
@@ -186,7 +160,7 @@ int main(int argc, char** argv) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_FLOAT, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, 0);
     glDisable(GL_TEXTURE_2D);
 
     // create framebufferName and attach texture A to it

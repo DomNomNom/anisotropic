@@ -56,7 +56,7 @@ static const std::string preprocess(const std::string &fileName) {
 
 
 
-static void validateShader(GLuint shader, const char* file = 0) {
+static void validateShader(GLuint shader, const char*) {
     const unsigned int BUFFER_SIZE = 512;
     char buffer[BUFFER_SIZE];
     memset(buffer, 0, BUFFER_SIZE);

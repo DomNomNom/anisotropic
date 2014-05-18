@@ -38,9 +38,9 @@ void main() {
     );
 
 
-    fragColor = 2*sample(gammaTransform * betaTransform * alphaTransform * normal);
+    fragColor = sample(gammaTransform * betaTransform * alphaTransform * normal);
 
-    fragColor = 100 * texture(lightmap_hdr, pos_uv.xy);
+    // fragColor = texture(lightmap_hdr, pos_uv.xy);
     // fragColor = 1.0 - exp(-hello*100 * fragColor);
     // fragColor = vec4(hello, 0.0, 0.0, 1.0);
 
