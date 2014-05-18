@@ -64,7 +64,9 @@ static void validateShader(GLuint shader, const char* file = 0) {
 
     glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
     if (length > 0) {
-        std::cerr << "Shader " << shader << " (" << (file?file:"") << ") compile error: " << buffer << std::endl;
+        // std::cerr << "Shader " << shader << " (" << (file?file:"") << ") compile error: " << buffer << std::endl;
+        std::cerr << buffer << std::endl;
+        exit(-1);
     }
 }
 

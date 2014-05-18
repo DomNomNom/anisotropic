@@ -107,14 +107,26 @@ void displayHandler() {
     glDisable(GL_TEXTURE_2D);
 
     // save output
-    // glReadPixels(0,0, width, height, GL_RGBA, GL_HALF_FLOAT, pixelData);
+    glReadPixels(0,0, width, height, GL_RGBA, GL_HALF_FLOAT, pixelData);
+    // glReadPixels(0,0, width, height, GL_RGBA, GL_FLOAT, pixelData_float);
+    // for (int i=0; i<width*height; ++i) {
+    //     pixelData[i].r = pixelData_float[i*4 + 0];
+    //     pixelData[i].g = pixelData_float[i*4 + 1];
+    //     pixelData[i].b = pixelData_float[i*4 + 2];
+    //     pixelData[i].a = pixelData_float[i*4 + 3];
+    // }
     glReadPixels(0,0, width, height, GL_RGBA, GL_FLOAT, pixelData_float);
-    for (int i=0; i<width*height; ++i) {
-        pixelData[i].r = pixelData_float[i*4 + 0];
-        pixelData[i].g = pixelData_float[i*4 + 1];
-        pixelData[i].b = pixelData_float[i*4 + 2];
-        pixelData[i].a = pixelData_float[i*4 + 3];
-    }
+    // int zeros = 0;
+    // for (int i=0; i<width*height; ++i) {
+    //     float sum = (
+    //         pixelData_float[i*4 + 0] +
+    //         pixelData_float[i*4 + 1] +
+    //         pixelData_float[i*4 + 2]
+    //     //  pixelData_float[i*4 + 3]
+    //     );
+    //     if (sum == 0.f) zeros += 1;
+    // }
+    // printf("minmax %f\n", zeros / float(width*height));
     exr_texture_save("assets/cache/test.exr", pixelData, width, height);
 
 

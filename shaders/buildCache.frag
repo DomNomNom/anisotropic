@@ -7,7 +7,7 @@ out vec4 fragColor;
 // #include to01.glsl
 #include rotationMatrix.glsl
 
-smooth in vec4 pos_screen;
+smooth in vec4 pos_uv;
 smooth in vec4 pos_project;
 
 uniform float hello;
@@ -15,8 +15,8 @@ uniform float range_tangent;
 uniform float range_bitangent;
 
 void main() {
-    float alpha = pos_screen.x * 2.0 * pi;
-    float beta  = pos_screen.y * 2.0 * pi;  // counter clockwise when viewed from +x
+    float alpha = pos_uv.x * 2.0 * pi;
+    float beta  = pos_uv.y * 2.0 * pi;  // counter clockwise when viewed from +x
 
     // float alpha = pos_project.x * pi;
     // float beta  = pos_project.y * pi;  // counter clockwise when viewed from +x
@@ -38,13 +38,15 @@ void main() {
     );
 
 
-    fragColor = sample(gammaTransform * betaTransform * alphaTransform * normal);
-    // fragColor = 1.0 - exp(-1 * fragColor);
+    fragColor = 2*sample(gammaTransform * betaTransform * alphaTransform * normal);
+
+    fragColor = 100 * texture(lightmap_hdr, pos_uv.xy);
+    // fragColor = 1.0 - exp(-hello*100 * fragColor);
     // fragColor = vec4(hello, 0.0, 0.0, 1.0);
 
     // fragColor = sample(normalize(vec3(1.0, pos.y, 0.0)));
-    // float y = cos(pos_screen.y);
+    // float y = cos(pos_uv.y);
     // fragColor = sample(normalize(vec3(1.0, pos.y, )))
 
-    // fragColor = vec4(pos_screen.x, pos_screen.y, hello, 1.0);
+    // fragColor = vec4(pos_uv.x, pos_uv.y, hello, 1.0);
 }

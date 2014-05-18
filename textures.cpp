@@ -228,9 +228,21 @@ GLuint png_cubemap_load(const char *base_name) {
 
 // ====== HDR (.exr) loading ======
 
-// credit to Andrew Chalmers for this bit of code. also:
+// credit to Andrew Chalmers for pointing me to .exr
 // http://www.openexr.com/TechnicalIntroduction.pdf
 // http://www.openexr.com/ReadingAndWritingImageFiles.pdf
+
+// shiftedBase is chosen such that the point of
+// (datawindow.min.x, datawindow,min.y) corresponds to the base address of the array
+Imf::FrameBuffer makeFrameBuffer(float *shiftedBase, int width) {
+    Imf::FrameBuffer frameBuffer;
+    frameBuffer.insert("R", Imf::Slice(Imf::FLOAT, (char *)shiftedBase+0*sizeof(float), 4*sizeof(float), width*4*sizeof(float), 1, 1, 0.0));
+    frameBuffer.insert("G", Imf::Slice(Imf::FLOAT, (char *)shiftedBase+1*sizeof(float), 4*sizeof(float), width*4*sizeof(float), 1, 1, 0.0));
+    frameBuffer.insert("B", Imf::Slice(Imf::FLOAT, (char *)shiftedBase+2*sizeof(float), 4*sizeof(float), width*4*sizeof(float), 1, 1, 0.0));
+    frameBuffer.insert("A", Imf::Slice(Imf::FLOAT, (char *)shiftedBase+3*sizeof(float), 4*sizeof(float), width*4*sizeof(float), 1, 1, 1.0));
+    return frameBuffer;
+}
+
 
 GLuint exr_texture_load(const char *file_name) {
     // Imf::RgbaInputFile file(file_name);
@@ -304,4 +316,10 @@ void exr_texture_save(const char fileName[], const Imf::Rgba *pixels, int width,
   Imf::RgbaOutputFile file(fileName, width, height, Imf::WRITE_RGBA);
   file.setFrameBuffer(pixels, 1, width);
   file.writePixels(height);
+}
+
+// rgba is an array of floats like [r,g,b,a,r,g,b,a,r...]
+void exr_texture_save_float(const char fileName[], const float *rgba, int width, int height) {
+    Imf::Header header (width, height);
+    header.channels().insert("G", Imf::Channel(Imf::FLOAT));
 }
