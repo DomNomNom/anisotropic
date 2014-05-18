@@ -19,7 +19,7 @@
 static std::string trim(const std::string& str) {
     const std::string whitespace = " \t\n\r";
 
-    const unsigned int strBegin = str.find_first_not_of(whitespace);
+    const unsigned long strBegin = str.find_first_not_of(whitespace);
     if (strBegin == std::string::npos)
         return ""; // no content
 
@@ -117,7 +117,6 @@ void Shader::init(const char *vsFile, const char *fsFile) {
     glAttachShader(shader_id, shader_vp);
     glLinkProgram(shader_id);
     validateProgram(shader_id);
-
 }
 
 Shader::~Shader() {

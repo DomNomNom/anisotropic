@@ -3,14 +3,10 @@
 out vec4 fragColor;
 
 
-#include constants.glsl
-#include sampleLightmap.frag
-
-
 smooth in vec4 pos_view;
 smooth in vec4 pos_world;
 smooth in vec4 pos_model;
-smooth in vec4 pos_screen;
+smooth in vec4 pos_project;
 
 smooth in vec4 vertex_normal;
 smooth in vec4 lights[4];
@@ -28,244 +24,19 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat3 normalMatrix;
 
-const int availableSamples = 162;
-uniform int numSamples;
-uniform vec3[availableSamples] sampleDirections;
-
-const vec3 light_ambient  = vec3(1.0, 1.0, 1.0) * 0.03;
-const vec3 light_diffuse  = vec3(1.0, 0.0, 0.0) * 1.0;
-const vec3 light_specular = vec3(1.0, 1.0, 1.0) * 1.0;
 
 bool error = false; // if true the shader will return the error colour (blue) at the end
 
-vec4 pos2cam; // world space
-vec3 normal;
 
-vec3 tangent;
-vec3 biTangent;
-
-// takes a vector with values (-1, 1) and scales it to fit in the range (0, 1)
-vec4  to01(vec4  neg11) {   return (neg11 + vec4(1.0)) * 0.5;   }
-vec3  to01(vec3  neg11) {   return (neg11 + vec3(1.0)) * 0.5;   }
-float to01(float neg11) {   return (neg11 +      1.0 ) * 0.5;   }
-
-float sq(float x) {  return x * x;  }  // squares a number
+#include to01.glsl
+#include rotationMatrix.glsl
+#include anisotropic.frag
 
 
-vec2 randomV = pos_screen.xy * sin(time);
-float rand() { // returns a random value within the range -1.0 to 1.0
-    float random = fract(sin(dot(randomV.xy, vec2(12.9898, 78.233)))* 43758.5453)  *2.0 - 1.0;
-    randomV = vec2(random, randomV.y*0.6364+randomV.x*0.2412+1.3);
-    return random;
-}
-
-vec4 rand3D_vec4() {
-    return vec4(rand(), rand(), rand(), 0.0);
-}
-vec3 rand3D() {
-    return vec3(rand(), rand(), rand());
-}
-
-// http://www.neilmendoza.com/glsl-rotation-about-an-arbitrary-axis/
-// angle in radians (default GLSL)
-mat4 rotationMatrix(vec3 axis, float angle) {;
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    return mat4(
-        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s, 0.0,
-        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s, 0.0,
-        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c, 0.0,
-        0.0, 0.0, 0.0, 1.0
-    );
-}
-
-// 3x3 version of the above
-mat3 rotationMatrix3(vec3 axis, float angle) {
-    axis = normalize(axis);
-    float s = sin(angle);
-    float c = cos(angle);
-    float oc = 1.0 - c;
-    return mat3(
-        oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,
-        oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,
-        oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c
-    );
-}
-
-// if v is not in the hemisphere in the direction of hemiDir
-// it will be mirrored along a plane defined by the normal hemiDir.
-// we assume v and hemiDir are of length 1
-vec3 hemisphere(vec3 v, vec3 hemiDir) {
-    float d = dot(v, hemiDir);
-    if (d < 0) {
-        return v - 2.0 * d*hemiDir;
-    }
-    return v;
-}
-
-// https://developer.blender.org/file/data/aqyezezn632wm4nxw5mc/PHID-FILE-ue4z6fkynybg3bmmcoeu/Ashikhmin_final.txt
-/* Ashikhmin anisotropic specular*/
-float Ashikhmin_Spec(vec3 n, vec3 l, vec3 v, float roughu, float roughv, float spec_shader) {
-    float fresnel_frac, div, exp=0.0;
-
-    /* half-way vector */
-    vec3 h = normalize(l + v);
-
-    vec3 w, u; /* tangent & biTangent vectors */
-    w = tangent;
-    u = biTangent;
-
-    float nh = dot(n, h); /* Dot product between surface normal and half-way vector */
-    float nl = dot(n, l); /* Dot product between surface normal and light vector */
-    float nv = dot(n, v); /* Dot product between surface normal and view vector */
-    float hl = dot(h, l); /* Dot product between light vector and half-way vector */
-    float hv = dot(h, v); /* Dot product between view vector and half-way vector */
-    float hu = dot(h, u); /* Dot product between rough u direction and half-way vector */
-    float hw = dot(h, w); /* Dot product between rough v direction and half-way vector */
-
-    if (nh <= 0.0) return 0.0;
-    if (nl <= 0.0) return 0.0;
-    if (nv <= 0.0) nv = 0.0;
-    if (hl <= 0.0) hl = 0.0;
-    if (hv <= 0.0) hv = 0.0;
-    // return nl;
-
-
-    /* Schlick's approximation to Fresnel fraction */
-    if (spec_shader > 1.0) spec_shader = 1.0;
-    fresnel_frac = spec_shader + ((1.0 - spec_shader) * pow((1.0 - max(hv,hl)), 5));
-    // return fresnel_frac * 100000.0;
-
-    /* Anisotropic Phong model */
-    div = 1.0 - pow(nh, 2);
-    if (div > 0.0) {
-        exp = ((roughu * hu*hu) + (roughv * hw*hw)) / div;
-    }
-
-    return (
-        // nl *
-        (sqrt((roughu + 1.0)*(roughv + 1.0)) / (8.0 * pi * (max(hv,hl) * max(nv,nl))))
-        // pow(nh,exp) //* fresnel_frac
-    );
-}
-
-
-// http://en.wikipedia.org/wiki/Specular_highlight#Ward_anisotropic_distribution
-float ward_spec(vec3 n, vec3 l, vec3 r, float ax, float ay) {
-    vec3 h = normalize(l+r);
-
-    float nl = dot(n, l);
-    float nr = dot(n, r);
-    if (nl < 0.0) return 0.0;
-    if (nr < 0.0) return 0.0;
-
-    // keeping in same notation
-    vec3 x = tangent;
-    vec3 y = biTangent;
-
-    return (
-        (1.0 / sqrt(nl * nr)) *
-        nl / (4.0 * pi * ax * ay) *
-        exp(-2.0 * (
-            (
-                sq(dot(h, x) / ax) +
-                sq(dot(h, y) / ay)
-            )
-            / (1.0 + dot(h, n))
-        ))
-    );
-}
-
-vec4 light(vec4 pos2light) {
-    pos2light = normalize(pos2light);
-    vec3 cam2pos = -pos2cam.xyz;
-
-
-    // vec4 n_dash = vec4(0.0);
-    // n_dash += normal  * dot(normal,  pos2light);
-    // n_dash += tangent * dot(tangent, pos2light);
-    // n_dash.w = 0.0;
-    // n_dash = normalize(n_dash);
-
-    // normal = n_dash;
-    // return tangent;
-
-    vec4 accumulator = vec4(0.0);
-
-    // // sample the lightmap and multiply by the BDRF
-    // for (int i=0; i<numSamples; ++i) {
-    //     // vec3 sampleDir = sampleDirections[i];
-    //     vec3 sampleDir = rand3D();
-    //     sampleDir = hemisphere(sampleDir, normal);
-    //     // if (dot(normal, sampleDir) < 0)
-    //     //     error = true;
-    //     // accumulator += sample(sampleDir) * dot(normal, sampleDir);
-    //     // accumulator += sample(sampleDir) * Ashikhmin_Spec(normal, sampleDir, normalize(pos2cam.xyz), 100.0, 100.0, 0.5);
-    //     accumulator += sample(sampleDir) * ward_spec(normal, sampleDir, normalize(pos2cam.xyz), tester, tester2);
-    // }
-    // return 10.0 * accumulator / numSamples;
-
-    // sampling by varying-the-normal approach.
-    vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
-    for (int i=0; i<numSamples; ++i) {
-        vec3 reflectedDir;
-
-        if (tester_int == 0) {
-            // varied normal approach
-            vec3 reflectionNormal = normal + tester * rand() * biTangent;
-            reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
-            reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
-        }
-        else {
-            // sampled arc approach
-            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * tester) * normalReflectedDir;
-        }
-
-        // two ways to deal reflected vectors that go into the surface (reflect along normal or make the sample be zero)
-        if (dot(reflectedDir, normal) >= 0) {
-            accumulator += sample(reflectedDir);
-        }
-        // else {
-        //     // error = true;
-        //     accumulator += vec4(1.0, 0.0, 0.0, 0.0);
-        // }
-
-        // reflectedDir = hemisphere(reflectedDir, normal);
-        // accumulator += sample(reflectedDir);
-    }
-    return accumulator / numSamples;
-
-
-    // for (int i=0; i<numSamples; ++i) {
-    //     vec3 reflectionNormal = normal + dot(0.9*sampleDirections[i], biTangent.xyz) * biTangent;
-    //     accumulator += texture(lightmap, normalize(reflect(cam2pos, reflectionNormal)));
-    // }
-    // return accumulator / numSamples;
-
-    return sample(reflect(cam2pos, normal));
-
-
-    // phong
-    float Idiff = dot(normal, -pos2light.xyz);  // Diffuse
-
-    // Specular
-    vec3 R = normalize(reflect(cam2pos, normal)); // reflected. (pos to eye-ish)
-    float base = clamp(dot(R, pos2light.xyz), 0.0, 1.0);
-    float Ispec = 1.0 * pow(base, 40.0);
-    return vec4((
-            light_ambient +
-            light_diffuse  * clamp(Idiff, 0.0, 1.0) +
-            light_specular * clamp(Ispec, 0.0, 1.0)
-        ),
-        0.0
-    );
-}
 
 void main() {
     // pos2cam = vec4(normalize(-pos_view.xyz), 0.0);
-    pos2cam = eye - pos_world;
+    vec4 pos2cam = eye - pos_world; // world space
 
     // normal = vec4(normalize(-pos_world.xyz), 0.0);
     vec4 modelNormal;
@@ -275,16 +46,15 @@ void main() {
     else {
         modelNormal = vec4(pos_model.x, 0.0, pos_model.z, 0.0);
     }
-    normal  = normalize(modelMatrix * modelNormal).xyz;
-    tangent = normalize(modelMatrix * vec4(pos_model.z, 0.0, -pos_model.x, 0.0)).xyz;
-    biTangent = normalize(vec3(cross(normal, tangent)));
+    vec3 normal  = normalize(modelMatrix * modelNormal).xyz;
+    vec3 tangent = normalize(modelMatrix * vec4(pos_model.z, 0.0, -pos_model.x, 0.0)).xyz;
 
-    fragColor = light(lights[0]);
+    fragColor = anisotropic(normal, -pos2cam.xyz, tangent, tester);
     // fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
 
     fragColor = 1.0 - exp(-exposure * fragColor);
 
-    // fragColor = eye;
+    // fragColor = vec4(normal, 1.0);
 
     // if (numSamples > availableSamples) {
     //     error = true;
