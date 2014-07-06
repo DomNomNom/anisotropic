@@ -7,7 +7,7 @@
 const int availableSamples = 162;
 uniform int numSamples;
 uniform vec3[availableSamples] sampleDirections;
-
+uniform sampler3D cache;
 
 
 vec2 randomV = pos_project.xy * sin(time);
@@ -108,7 +108,69 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
     );
 }
 
+/*
+// r = reflectedDir
+// g = gammaNormal
+vec4 cacheSample(vec3 r, vec3 g) {
+
+
+    // look up something in the texture
+    vec3 horizontal = normalize(cross(tangent, vec3(0.0, 1.0, 0.0)));
+    // if (horizontal.z < 0.0) horizontal *= -1.0; // force horizontal.z >= 0
+    float alpha = acos(horizontal.x); // dot(horizontal, vec3(1.0, 0.0, 0.0))  // TODO optimize with definition of horizontal
+    if (horizontal.z > 0) alpha = 2.0*pi-alpha; // case when alpha < 0 (or >180)
+
+    // vec3 gammaPlaneNormal = cross(normalReflectedDir, horizontal);  // up when normalReflectedDir==(1 0 0) and tangent=(0 0 -1)
+    // vec3 elevationVector = normalize(cross(tangent, horizontal));
+    // float beta = asin(elevationVector.y);
+    float beta = asin(tangent.y);
+    // if (elevationVector.y < 0) return errorColor;beta *= -1.0; // ensure the sign is correct
+
+    // float gamma = -acos(dot(normalReflectedDir, horizontal));
+    // if (normalReflectedDir.y < 0) gamma *= -1.0; // ensure the sign is correct
+    // float gamma = asin(-0.99999 * length(cross(horizontal, normalReflectedDir))); // ? == asin(-length(cross(horizontal, normalReflectedDir)))
+    // float gamma = asin(-1.00001 * length(cross(horizontal, normalReflectedDir)));
+    // float gamma = asin(clamp(-1.0 * length(cross(horizontal, r)), -1.0, 1.0));
+    float gamma = acos(dot(r, horizontal));
+    // if (r.y < 0.0) gamma = 2.0*pi-gamma;
+    if (r.y < 0.0) gamma = -gamma;
+
+    // // cartesian coords
+    // beta = radians(90.0);
+    // gamma = asin(normalReflectedDir.y);
+    // alpha = atan(-normalReflectedDir.z, normalReflectedDir.x);
+
+    vec3 texCoords = vec3(alpha, beta, 2.0 * gamma);
+    // texCoords = texCoords.xzy;
+    texCoords /= 2.0 * pi;  //  (0 2pi)  --> (0 1)
+    if (normalReflectedDir.x > 0.99 && normalReflectedDir.x < 0.999) return errorColor; // the debug ring of truth
+
+    // return vec4(texCoords, 1.0);
+    if (texCoords.x < -1.0 || texCoords.x > 1.0) return errorColor;
+    if (texCoords.y < -1.0 || texCoords.y > 1.0) return errorColor;
+    if (texCoords.z < -1.0 || texCoords.z > 1.0) return errorColor;
+    // return vec4(to01(elevationVector), 1.0);
+    return vec4(
+        0.0,
+        to01(texCoords.z), // to01(gamma / pi),
+        0.0,
+        1.0
+    );
+    // return vec4(to01(normalize(normalReflectedDir)), 1.0);
+    // return sample(pos_world.xyz);
+    // return vec4(to01(texCoords), 1.0);
+    return texture(cache, texCoords);
+}
+*/
+
 vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
+    vec3 biTangent = normalize(cross(normal, tangent));
+    vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
+
+    // return vec4 cacheSample(pos_world.xyz, tangent);
+    // return vec4 cacheSample(normalReflectedDir, tangent);
+
+
     // pos2light = normalize(pos2light);
 
     // vec4 n_dash = vec4(0.0);
@@ -120,7 +182,12 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     // normal = n_dash;
     // return tangent;
 
-    vec3 biTangent = normalize(cross(normal, tangent));
+
+
+
+
+
+    // ====== stochastic sampling from here on ======
 
     vec4 accumulator = vec4(0.0);  // accumulates reflected light
 
@@ -138,7 +205,6 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     // return 10.0 * accumulator / numSamples;
 
     // biased sampling by varying-the-normal approach.
-    vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
     for (int i=0; i<numSamples; ++i) {
         vec3 reflectedDir;
 
@@ -147,6 +213,13 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
             vec3 reflectionNormal = normal + anisotropy * rand() * biTangent;
             reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
             reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
+        }
+        else if (tester_int == 1) {
+            vec3 reflectionNormal = normal + anisotropy * rand() * biTangent;
+            vec3 reflectedDir1 = normalize(reflect(cam2pos, normalize(normal + 0.001*biTangent)));
+            vec3 reflectedDir2 = normalize(reflect(cam2pos, normalize(normal - 0.001*biTangent)));
+            vec3 g = cross(normalReflectedDir, normalize(reflectedDir2 - reflectedDir1)); // gammaNormal
+            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
         }
         else {
             // sampled arc approach

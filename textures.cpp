@@ -243,7 +243,11 @@ Imf::FrameBuffer makeFrameBuffer(const float *shiftedBase, int width) {
     return frameBuffer;
 }
 
-
+void readExrPixels(Imf::InputFile &file, float *rgba, Imath::Box2i &dw) {
+    int width = dw.max.x - dw.min.x + 1;
+    file.setFrameBuffer(makeFrameBuffer(rgba - 4 * (dw.min.x + dw.min.y * width), width));
+    file.readPixels(dw.min.y, dw.max.y);
+}
 GLuint exr_texture_load(const char *file_name) {
     Imf::InputFile file(file_name);
     Imath::Box2i dw = file.header().dataWindow();
@@ -251,9 +255,7 @@ GLuint exr_texture_load(const char *file_name) {
     int height = dw.max.y - dw.min.y + 1;
 
     float *rgba = new float[4 * width * height];
-
-    file.setFrameBuffer(makeFrameBuffer(rgba - 4 * (dw.min.x + dw.min.y * width), width));
-    file.readPixels(dw.min.y, dw.max.y);
+    readExrPixels(file, rgba, dw);
 
     // create the OpenGL texture
     GLuint texture;
@@ -262,17 +264,51 @@ GLuint exr_texture_load(const char *file_name) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, rgba);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    exr_texture_save("assets/cache/wtf.exr", rgba, width, height);
 
     delete[] rgba;
 
     return texture;
 }
 
+// we assume all images have the same datawindow
+GLuint exr_cubetex_load(const char *base_name, unsigned int r_depth) {
+    char file_path[200];
+    const char *nameFormat = "%s%02d.exr";
+    sprintf(file_path, nameFormat, base_name, 0);
+    Imf::InputFile firstFile(file_path);
+    Imath::Box2i dw = firstFile.header().dataWindow();
+    int width = dw.max.x - dw.min.x + 1;
+    int height = dw.max.y - dw.min.y + 1;
+
+    float *rgba = new float[4 * width * height * r_depth];
+
+
+    for (unsigned int r=0; r<r_depth; ++r) {
+        sprintf(file_path, nameFormat, base_name, r);
+        Imf::InputFile file(file_path);
+        readExrPixels(file, rgba + 4*width*height*r, dw);
+    }
+
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_3D, texture);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, width, height, r_depth, 0, GL_RGBA, GL_FLOAT, rgba);
+    glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+
+    // power = 2log(sq(abs(cmplx)))
+    // phase = angle(cmplx) / 2pi
+    delete[] rgba;
+
+    return texture;
+
+}
 
 // ====== EXR saving ======
 

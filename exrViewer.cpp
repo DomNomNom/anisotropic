@@ -111,6 +111,9 @@ int main(int argc, char** argv) {
 
     texture = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     texture = exr_texture_load("assets/cache/test.exr");
+    texture = exr_texture_load("./assets/cache/cache02.exr");
+    texture = exr_texture_load("./assets/cache/cache04.exr");
+
 
     // tweak(&exposure);
 

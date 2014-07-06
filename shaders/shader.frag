@@ -12,6 +12,7 @@ smooth in vec4 vertex_normal;
 smooth in vec4 lights[4];
 // varying vec4 tangent;
 
+uniform bool exposure_enabled = false;
 uniform float exposure = 1.0;
 uniform float time;
 uniform float tester = 5.0;
@@ -26,7 +27,6 @@ uniform mat3 normalMatrix;
 
 
 bool error = false; // if true the shader will return the error colour (blue) at the end
-
 
 #include to01.glsl
 #include rotationMatrix.glsl
@@ -52,7 +52,9 @@ void main() {
     fragColor = anisotropic(normal, -pos2cam.xyz, tangent, tester);
     // fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
 
-    fragColor = 1.0 - exp(-exposure * fragColor);
+    if (exposure_enabled) {
+        fragColor = 1.0 - exp(-exposure * fragColor);
+    }
 
     // fragColor = vec4(normal, 1.0);
 
@@ -60,7 +62,7 @@ void main() {
     //     error = true;
     // }
     if (error) {
-        fragColor = vec4(0.0, 0.0, 1.0, 1.0);
+        fragColor = errorColor;
     }
 
 }

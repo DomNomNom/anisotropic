@@ -10,7 +10,7 @@ out vec4 fragColor;
 smooth in vec4 pos_uv;
 smooth in vec4 pos_project;
 
-uniform float hello;
+uniform float gamma;
 uniform float range_tangent;
 uniform float range_bitangent;
 
@@ -20,7 +20,7 @@ void main() {
 
     // float alpha = pos_project.x * pi;
     // float beta  = pos_project.y * pi;  // counter clockwise when viewed from +x
-    float gamma = hello;
+    float gamma = gamma;
 
     // float alpha = pos.x * 1.0 * pi;
     // float beta  = 0.0 * pi;  // counter clockwise when viewed from +x
@@ -33,20 +33,21 @@ void main() {
     mat3 alphaTransform = rotationMatrix3(vec3(0.0, 1.0, 0.0), alpha);
     mat3 betaTransform  = rotationMatrix3(alphaTransform * normal, beta);
     mat3 gammaTransform = rotationMatrix3(
-        betaTransform * alphaTransform * bitangent,
+        betaTransform * alphaTransform * bitangent, // ?
         gamma
     );
 
 
     fragColor = sample(gammaTransform * betaTransform * alphaTransform * normal);
 
+
     // fragColor = texture(lightmap_hdr, pos_uv.xy);
-    // fragColor = 1.0 - exp(-hello*100 * fragColor);
-    // fragColor = vec4(hello, 0.0, 0.0, 1.0);
+    // fragColor = 1.0 - exp(-gamma*100 * fragColor);
+    // fragColor = vec4(gamma, 0.0, 0.0, 1.0);
 
     // fragColor = sample(normalize(vec3(1.0, pos.y, 0.0)));
     // float y = cos(pos_uv.y);
     // fragColor = sample(normalize(vec3(1.0, pos.y, )))
 
-    // fragColor = vec4(pos_uv.x, pos_uv.y, hello, 1.0);
+    // fragColor = vec4(pos_uv.x, pos_uv.y, gamma, 1.0);
 }

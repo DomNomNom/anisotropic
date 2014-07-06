@@ -52,6 +52,7 @@ float turntableAngle = 0.f;
 float scaleFactor = 1.f;
 float cameraDistance = 4.5;
 float exposure = 100.f;
+bool exposure_enabled = false;
 
 float seconds = 0.f; // since the start
 float mouse_x = 0.0;
@@ -87,6 +88,7 @@ GLfloat material_shininess[] = {89};
 
 GLuint lightmap;
 GLuint lightmap_hdr;
+GLuint cache;
 
 int framecount = 0;
 int seconds_floor = 0;
@@ -111,8 +113,9 @@ void DisplayHandler() {
     glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS,   material_shininess);
 
     glEnable(GL_TEXTURE_2D);
-    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D,       lightmap_hdr);
-    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP, lightmap);
+    glActiveTexture(GL_TEXTURE2); glBindTexture(GL_TEXTURE_3D,          cache       );
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D,          lightmap_hdr);
+    glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP,    lightmap    );
 
     if (turntable) {
         turntableAngle = 50 * seconds;
@@ -157,6 +160,7 @@ void DisplayHandler() {
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester);
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap_hdr"), 1); //Texture unit 1
+    glUniform1i( glGetUniformLocation(skyboxShader.id(), "cache"),        2); //Texture unit 2
     glUniform4fv(glGetUniformLocation(skyboxShader.id(), "eye"), 1, value_ptr(eye));
     glUniform4fv(glGetUniformLocation(skyboxShader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
     glUniformMatrix4fv(glGetUniformLocation(skyboxShader.id(), "modelMatrix"     ), 1, false, value_ptr(modelMatrix       ));
@@ -175,6 +179,7 @@ void DisplayHandler() {
         glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
         glUniform1i( glGetUniformLocation(shader.id(), "tester_int"), tester_int);
         glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
+        glUniform1i( glGetUniformLocation(shader.id(), "exposure_enabled"),  exposure_enabled);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
@@ -240,6 +245,7 @@ void KeyHandler(unsigned char key, int, int) {
         case 't': turntable = !turntable;   break;
         case '[': tester_int -= 1;          break;
         case ']': tester_int += 1;          break;
+        case 'e': exposure_enabled = !exposure_enabled; break;
     }
 
     // glutPostRedisplay();
@@ -319,6 +325,7 @@ int main(int argc, char** argv) {
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     lightmap = png_cubemap_load("assets/bright_dots/");
+    cache = exr_cubetex_load("assets/cache/cache", 16);
     // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     tweak(&tester);

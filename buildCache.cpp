@@ -18,7 +18,8 @@ float pixelData[width * height * 4];
 float mouse_x = 0.0;
 float mouse_y = 0.0;
 
-
+const unsigned int gammaSamples = 16;
+unsigned int gammaSample = 0;
 
 // in radians
 float range_tangent   = 90.0  /360* 2.0*pi;
@@ -72,17 +73,24 @@ void displayHandler() {
 
     // glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 7.f);
     // glUniform1f( glGetUniformLocation(shader.id(), "tester"), tester);
+
+
+    float gamma;
+    if (gammaSample >= gammaSamples) {
+        gamma =  2 * pi * mouse_x;
+    }
+    else {
+        gamma = 2 * pi * gammaSample / float(gammaSamples); // gamma in the range [0, 1)
+    }
+    // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
+
     shader.bind();
 
-    float gamma =  mouse_x * 2 * pi;
-    // printf("gamma (degrees) %3.f  y %3.f\n", mouse_x*360.0, mouse_y*360.0);
-
-    glUniform1f( glGetUniformLocation(shader.id(), "hello"),        gamma);
+    glUniform1f( glGetUniformLocation(shader.id(), "gamma"),        gamma);
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
     glUniform1f( glGetUniformLocation(shader.id(), "range_tangent"),    range_tangent  );
     glUniform1f( glGetUniformLocation(shader.id(), "range_bitangent"),  range_bitangent);
-
 
     drawWindowSizedQuad();
 
@@ -90,7 +98,17 @@ void displayHandler() {
 
     // save output
     glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, pixelData);
-    exr_texture_save("assets/cache/test.exr", pixelData, width, height);
+    char filePath[200];
+    if (gammaSample >= gammaSamples) {
+        glutDestroyWindow(window);
+        exit(0);
+        sprintf(filePath, "assets/cache/test.exr");
+    }
+    else {
+        sprintf(filePath, "assets/cache/cache%02d.exr", gammaSample);
+        gammaSample += 1;
+    }
+    exr_texture_save(filePath, pixelData, width, height);
 
 
     // display the framebuffer
@@ -98,13 +116,10 @@ void displayHandler() {
     glDisable(GL_LIGHTING);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);// Render to the screen
     glViewport(0, 0, width, height);
-
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, renderTexture);
-
     glColor4f(1,1,1,1);
     drawWindowSizedQuad();
     glDisable(GL_TEXTURE_2D);
@@ -114,7 +129,7 @@ void displayHandler() {
     // printf("%f %f\n", mouse_x * 2 * pi, mouse_y);
     // printf("rendered. \n");
 
-    glutPostRedisplay();
+    glutPostRedisplay(); // active rendering
 }
 
 void keyHandler(unsigned char key, int, int) {
