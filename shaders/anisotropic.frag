@@ -215,10 +215,10 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
             reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
         }
         else if (tester_int == 1) {
-            vec3 reflectionNormal = normal + anisotropy * rand() * biTangent;
-            vec3 reflectedDir1 = normalize(reflect(cam2pos, normalize(normal + 0.001*biTangent)));
-            vec3 reflectedDir2 = normalize(reflect(cam2pos, normalize(normal - 0.001*biTangent)));
-            vec3 g = cross(normalReflectedDir, normalize(reflectedDir2 - reflectedDir1)); // gammaNormal
+            // vec3 reflectedDir1 = normalize(reflect(cam2pos, normalize(normal + 0.001*biTangent)));
+            // vec3 reflectedDir2 = normalize(reflect(cam2pos, normalize(normal - 0.001*biTangent)));
+            // vec3 g = cross(normalReflectedDir, normalize(reflectedDir2 - reflectedDir1)); // gammaNormal
+            vec3 g = cross(normalReflectedDir, biTangent);  // gammaNormal
             reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
         }
         else {
