@@ -108,23 +108,43 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
     );
 }
 
-/*
-// r = reflectedDir
-// g = gammaNormal
+
+bool isZero(float f) {
+    return abs(f) < 0.0001;
+}
+
+// r: reflectedDir
+// g: gammaNormal
+// dot(r, g) == 0.0
 vec4 cacheSample(vec3 r, vec3 g) {
 
+    // horizontal is the line at which the arc meets the x/z plane.
+    vec3 horizontal = normalize(cross(g, vec3(0.0, 1.0, 0.0)));  // TODO: Optimize
 
-    // look up something in the texture
-    vec3 horizontal = normalize(cross(tangent, vec3(0.0, 1.0, 0.0)));
     // if (horizontal.z < 0.0) horizontal *= -1.0; // force horizontal.z >= 0
-    float alpha = acos(horizontal.x); // dot(horizontal, vec3(1.0, 0.0, 0.0))  // TODO optimize with definition of horizontal
+    float alpha = acos(horizontal.x); // == dot(horizontal, vec3(1.0, 0.0, 0.0))
     if (horizontal.z > 0) alpha = 2.0*pi-alpha; // case when alpha < 0 (or >180)
 
-    // vec3 gammaPlaneNormal = cross(normalReflectedDir, horizontal);  // up when normalReflectedDir==(1 0 0) and tangent=(0 0 -1)
-    // vec3 elevationVector = normalize(cross(tangent, horizontal));
-    // float beta = asin(elevationVector.y);
-    float beta = asin(tangent.y);
+    vec3 elevationVector = normalize(cross(g, horizontal));
+    float beta1 = acos(elevationVector.y);
+
+    float beta = acos(g.y);
+    beta = beta1;
+
+    // some assertion statements
+    if (!(
+        // isZero(dot(r, g))                       &&
+        // isZero(dot(horizontal, g))              &&
+        // isZero(beta - beta1)                    &&
+        isZero(length(cross(cross(horizontal, r), g)))   // the outer cross() asserts that the vectors are scalar multiples of eachother
+    )) {
+        error = true;
+        return errorColor;
+    }
+
     // if (elevationVector.y < 0) return errorColor;beta *= -1.0; // ensure the sign is correct
+
+
 
     // float gamma = -acos(dot(normalReflectedDir, horizontal));
     // if (normalReflectedDir.y < 0) gamma *= -1.0; // ensure the sign is correct
@@ -143,32 +163,39 @@ vec4 cacheSample(vec3 r, vec3 g) {
     vec3 texCoords = vec3(alpha, beta, 2.0 * gamma);
     // texCoords = texCoords.xzy;
     texCoords /= 2.0 * pi;  //  (0 2pi)  --> (0 1)
-    if (normalReflectedDir.x > 0.99 && normalReflectedDir.x < 0.999) return errorColor; // the debug ring of truth
 
-    // return vec4(texCoords, 1.0);
-    if (texCoords.x < -1.0 || texCoords.x > 1.0) return errorColor;
-    if (texCoords.y < -1.0 || texCoords.y > 1.0) return errorColor;
-    if (texCoords.z < -1.0 || texCoords.z > 1.0) return errorColor;
+    // these should never happen but they do ocasionally :(
+    // if (texCoords.x < -1.0 || texCoords.x > 1.0) return errorColor;
+    // if (texCoords.y < -1.0 || texCoords.y > 1.0) return errorColor;
+    // if (texCoords.z < -1.0 || texCoords.z > 1.0) return errorColor;
+
     // return vec4(to01(elevationVector), 1.0);
-    return vec4(
-        0.0,
-        to01(texCoords.z), // to01(gamma / pi),
-        0.0,
-        1.0
-    );
+
+    // return vec4(
+    //     0.0,
+    //     to01(texCoords.z), // to01(gamma / pi),
+    //     0.0,
+    //     1.0
+    // );
+
     // return vec4(to01(normalize(normalReflectedDir)), 1.0);
-    // return sample(pos_world.xyz);
+    // return sample(pos_model.xyz);
     // return vec4(to01(texCoords), 1.0);
     return texture(cache, texCoords);
 }
-*/
+
 
 vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     vec3 biTangent = normalize(cross(normal, tangent));
     vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
+    vec3 g = normalize(cross(normalReflectedDir, biTangent));  // gammaNormal
 
-    // return vec4 cacheSample(pos_world.xyz, tangent);
-    // return vec4 cacheSample(normalReflectedDir, tangent);
+    // // the debug ring of truth
+    // float r = length(pos_model.zy);
+    // if (0.05 < r && r < 0.1 && pos_model.x > 0) return errorColor;
+
+    return cacheSample(pos_model.xyz, normalize(cross(pos_model.xyz, biTangent)));
+    // return cacheSample(normalReflectedDir, g);
 
 
     // pos2light = normalize(pos2light);
@@ -215,10 +242,6 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
             reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
         }
         else if (tester_int == 1) {
-            // vec3 reflectedDir1 = normalize(reflect(cam2pos, normalize(normal + 0.001*biTangent)));
-            // vec3 reflectedDir2 = normalize(reflect(cam2pos, normalize(normal - 0.001*biTangent)));
-            // vec3 g = cross(normalReflectedDir, normalize(reflectedDir2 - reflectedDir1)); // gammaNormal
-            vec3 g = cross(normalReflectedDir, biTangent);  // gammaNormal
             reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
         }
         else {
