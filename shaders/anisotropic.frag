@@ -125,16 +125,16 @@ vec4 cacheSample(vec3 r, vec3 g) {
     float alpha = acos(horizontal.x); // == dot(horizontal, vec3(1.0, 0.0, 0.0))
     if (horizontal.z > 0) alpha = 2.0*pi-alpha; // case when alpha < 0 (or >180)
 
+      // a vector tangent to the arc at the horizontal plane
     vec3 elevationVector = normalize(cross(g, horizontal));
-    float beta1 = acos(elevationVector.y);
+    float beta = asin(elevationVector.y);
 
-    float beta = acos(g.y);
-    beta = beta1;
+    // float beta1 = -acos(g.y);
 
     // some assertion statements
     if (!(
-        // isZero(dot(r, g))                       &&
-        // isZero(dot(horizontal, g))              &&
+        isZero(dot(r, g))                       &&
+        isZero(dot(horizontal, g))              &&
         // isZero(beta - beta1)                    &&
         isZero(length(cross(cross(horizontal, r), g)))   // the outer cross() asserts that the vectors are scalar multiples of eachother
     )) {
