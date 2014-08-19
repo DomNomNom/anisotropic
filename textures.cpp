@@ -286,6 +286,7 @@ GLuint exr_cubetex_load(const char *base_name, unsigned int r_depth) {
 
 
     for (unsigned int r=0; r<r_depth; ++r) {
+        printf("cubetex load %d\n", r);
         sprintf(file_path, nameFormat, base_name, r);
         Imf::InputFile file(file_path);
         readExrPixels(file, rgba + 4*width*height*r, dw);

@@ -1,6 +1,7 @@
 
 // requires
 
+#include random.glsl
 #include constants.glsl
 #include sampleLightmap.frag
 
@@ -10,19 +11,6 @@ uniform vec3[availableSamples] sampleDirections;
 uniform sampler3D cache;
 
 
-vec2 randomV = pos_project.xy * sin(time);
-float rand() { // returns a random value within the range -1.0 to 1.0
-    float random = fract(sin(dot(randomV.xy, vec2(12.9898, 78.233)))* 43758.5453)  *2.0 - 1.0;
-    randomV = vec2(random, randomV.y*0.6364+randomV.x*0.2412+1.3);
-    return random;
-}
-
-vec4 rand3D_vec4() {
-    return vec4(rand(), rand(), rand(), 0.0);
-}
-vec3 rand3D() {
-    return vec3(rand(), rand(), rand());
-}
 
 
 // if v is not in the hemisphere in the direction of hemiDir
@@ -194,8 +182,10 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     // float r = length(pos_model.zy);
     // if (0.05 < r && r < 0.1 && pos_model.x > 0) return errorColor;
 
-    return cacheSample(pos_model.xyz, normalize(cross(pos_model.xyz, biTangent)));
-    // return cacheSample(normalReflectedDir, g);
+    // return cacheSample(pos_model.xyz, normalize(cross(pos_model.xyz, biTangent)));
+    if (tester_int == 0) {
+        return cacheSample(normalReflectedDir, g);
+    }
 
 
     // pos2light = normalize(pos2light);
@@ -235,18 +225,22 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     for (int i=0; i<numSamples; ++i) {
         vec3 reflectedDir;
 
-        if (tester_int == 0) {
+        if (tester_int == 1) {
+            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
+        }
+        else if (tester_int == 2) {
+            // sampled arc approach
+            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * anisotropy) * normalReflectedDir;
+        }
+        else if (tester_int == 3) {
             // varied normal approach
             vec3 reflectionNormal = normal + anisotropy * rand() * biTangent;
             reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
             reflectedDir = normalize(reflect(cam2pos, reflectionNormal));
         }
-        else if (tester_int == 1) {
-            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
-        }
         else {
-            // sampled arc approach
-            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * anisotropy) * normalReflectedDir;
+            error = true;
+            reflectedDir = vec3(0.0);
         }
 
         // two ways to deal reflected vectors that go into the surface (reflect along normal or make the sample be zero)

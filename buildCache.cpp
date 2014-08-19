@@ -8,6 +8,8 @@
 
 #include "shader.h"
 #include "textures.h"
+#include "mytime.h"
+#include "config.h"
 
 const int width  = 256 * 2;
 const int height = 256 * 2;
@@ -18,7 +20,6 @@ float pixelData[width * height * 4];
 float mouse_x = 0.0;
 float mouse_y = 0.0;
 
-const unsigned int gammaSamples = 16;
 unsigned int gammaSample = 0;
 
 // in radians
@@ -33,6 +34,8 @@ GLuint lightmap_hdr;
 
 GLuint framebufferName; // The frame buffer object
 GLuint renderTexture;   // The texture we're going to render to
+
+float seconds = 0.f; // since the start of the program
 
 
 // draws two triangles that cover the screen
@@ -50,6 +53,7 @@ void drawWindowSizedQuad() {
 }
 
 void displayHandler() {
+    seconds += time_dt();
 
 
     // Render to our framebuffer
@@ -76,16 +80,17 @@ void displayHandler() {
 
 
     float gamma;
-    if (gammaSample >= gammaSamples) {
+    if (gammaSample >= GAMMA_SLICES) {
         gamma =  2 * pi * mouse_x;
     }
     else {
-        gamma = 2 * pi * gammaSample / float(gammaSamples); // gamma in the range [0, 1)
+        gamma = 2 * pi * gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
     }
     // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
 
     shader.bind();
 
+    glUniform1f( glGetUniformLocation(shader.id(), "time"),         seconds);
     glUniform1f( glGetUniformLocation(shader.id(), "gamma"),        gamma);
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
@@ -99,13 +104,13 @@ void displayHandler() {
     // save output
     glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, pixelData);
     char filePath[200];
-    if (gammaSample >= gammaSamples) {
+    if (gammaSample >= GAMMA_SLICES) {
         glutDestroyWindow(window);
         exit(0);
         sprintf(filePath, "assets/cache/test.exr");
     }
     else {
-        sprintf(filePath, "assets/cache/cache%02d.exr", gammaSample);
+        sprintf(filePath, "assets/cache2/cache%02d.exr", gammaSample);
         gammaSample += 1;
     }
     exr_texture_save(filePath, pixelData, width, height);

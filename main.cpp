@@ -21,6 +21,7 @@
 #include "shader.h"
 #include "textures.h"
 #include "tweaker.h"
+#include "config.h"
 
 using namespace glm;
 
@@ -52,12 +53,11 @@ float turntableAngle = 0.f;
 float scaleFactor = 1.f;
 float cameraDistance = 4.5;
 float exposure = 100.f;
-bool exposure_enabled = false;
+bool exposure_enabled = true;
 
-float seconds = 0.f; // since the start
 float mouse_x = 0.0;
 float mouse_y = 0.0;
-float tester = 0.1;
+float tester = 0.5;
 float tester2 = 0.5;
 int tester_int = 0;
 
@@ -90,8 +90,10 @@ GLuint lightmap;
 GLuint lightmap_hdr;
 GLuint cache;
 
-int framecount = 0;
+// time stuff
+float seconds = 0.f; // since the start of the program
 int seconds_floor = 0;
+int framecount = 0;
 char window_title[200];
 
 
@@ -274,11 +276,6 @@ float random(float min, float max) {
 
 int main(int argc, char** argv) {
     time_init();
-    objects = argc - 1;
-    if (objects < 1) {
-        printf("I require one model file. example: assets/sphere.obj\n");
-        exit(EXIT_FAILURE);
-    }
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
@@ -294,11 +291,21 @@ int main(int argc, char** argv) {
     glutPassiveMotionFunc(MouseMoveHander);
 
 
-    g_pGeometry = new G308_Geometry[objects];
-    for (int i=0; i<objects; ++i) {
-        g_pGeometry[i].ReadOBJ(argv[i+1]);
-        g_pGeometry[i].CreateGLPolyGeometry();
-        g_pGeometry[i].CreateGLWireGeometry();
+    // the .objs we are going to render
+    objects = argc - 1;
+    if (objects) {
+        g_pGeometry = new G308_Geometry[objects];
+        for (int i=0; i<objects; ++i) {
+            g_pGeometry[i].ReadOBJ(argv[i+1]);
+            g_pGeometry[i].CreateGLPolyGeometry();
+            g_pGeometry[i].CreateGLWireGeometry();
+        }
+    }
+    else {
+        g_pGeometry = new G308_Geometry[1];
+        g_pGeometry[0].ReadOBJ("./assets/cylinder2.obj");
+        g_pGeometry[0].CreateGLPolyGeometry();
+        g_pGeometry[0].CreateGLWireGeometry();
     }
 
     skybox.ReadOBJ("assets/box.obj");
@@ -325,7 +332,8 @@ int main(int argc, char** argv) {
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     lightmap = png_cubemap_load("assets/bright_dots/");
-    cache = exr_cubetex_load("assets/cache/cache", 16);
+    cache = 0;
+    cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
     // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     tweak(&tester);
