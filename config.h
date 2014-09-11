@@ -3,6 +3,6 @@
 #define GAMMA_SLICES 64
 #define DEFAULT_ANISOTROPY 0.5
 
-// typedef enum { ARC, SPHERICAL_HARMONIC } CacheType;
+typedef enum { ARC, SPHERICAL_HARMONIC } CacheType;
 
-// const CacheType cacheType = ARC;
+const CacheType cacheType = ARC;

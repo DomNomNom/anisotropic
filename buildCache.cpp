@@ -79,23 +79,30 @@ void displayHandler() {
     // glUniform1f( glGetUniformLocation(shader.id(), "tester"), tester);
 
 
-    float gamma;
-    if (gammaSample >= GAMMA_SLICES) {
-        gamma =  2 * pi * mouse_x;
-    }
-    else {
-        gamma = 2 * pi * gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
-    }
-    // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
 
     shader.bind();
 
     glUniform1f( glGetUniformLocation(shader.id(), "time"),         seconds);
-    glUniform1f( glGetUniformLocation(shader.id(), "gamma"),        gamma);
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
     glUniform1f( glGetUniformLocation(shader.id(), "range_tangent"),    range_tangent  );
     glUniform1f( glGetUniformLocation(shader.id(), "range_bitangent"),  range_bitangent);
+
+    if (cacheType == ARC) {
+        float gamma;
+        if (gammaSample >= GAMMA_SLICES) {
+            gamma =  2 * pi * mouse_x;
+        }
+        else {
+            gamma = 2 * pi * gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
+        }
+        glUniform1f( glGetUniformLocation(shader.id(), "gamma"),        gamma);
+        // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
+    }
+    else if (cacheType == SPHERICAL_HARMONIC) {
+        // TODO
+    }
+
 
     drawWindowSizedQuad();
 

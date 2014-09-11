@@ -332,9 +332,15 @@ int main(int argc, char** argv) {
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     lightmap = png_cubemap_load("assets/bright_dots/");
-    cache = 0;
-    cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
     // lightmap = png_cubemap_load("assets/beach_bright128/");
+
+    cache = 0;
+    if (cacheType == ARC) {
+        cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
+    }
+    else if (cacheType == SPHERICAL_HARMONIC) {
+        // TODO
+    }
 
     tweak(&tester);
     // tweak(&tester2);
