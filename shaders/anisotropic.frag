@@ -96,11 +96,6 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
     );
 }
 
-
-bool isZero(float f) {
-    return abs(f) < 0.0001;
-}
-
 // r: reflectedDir
 // g: gammaNormal
 // dot(r, g) == 0.0

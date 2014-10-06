@@ -91,13 +91,13 @@ void displayHandler() {
     if (cacheType == ARC) {
         float gamma;
         if (gammaSample >= GAMMA_SLICES) {
-            gamma =  2 * pi * mouse_x;
+            gamma =  mouse_x;
         }
         else {
-            gamma = 2 * pi * gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
+            gamma = gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
         }
-        glUniform1f( glGetUniformLocation(shader.id(), "gamma"),        gamma);
-        // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
+        glUniform1f( glGetUniformLocation(shader.id(), "gammaTexCoord"),     gamma);
+        printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
     }
     else if (cacheType == SPHERICAL_HARMONIC) {
         // TODO

@@ -1,6 +1,6 @@
 #version 330
 
-#include to01.glsl
+#include utils.glsl
 
 layout(location = 0)in vec4 vertex;
 // layout(location = 1)in vec4 normal;

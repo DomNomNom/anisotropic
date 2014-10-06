@@ -8,6 +8,7 @@
 
 #include "shader.h"
 #include "textures.h"
+#include "config.h"
 
 const int width  = 256 * 2;
 const int height = 256 * 2;
@@ -17,7 +18,6 @@ float mouse_x = 0.5;
 float mouse_y = 0.5;
 
 
-
 // in radians
 float range_tangent   = 90.0  /360* 2.0*pi;
 float range_bitangent =  0.0  /360* 2.0*pi;
@@ -25,7 +25,9 @@ float range_bitangent =  0.0  /360* 2.0*pi;
 GLuint window;
 Shader shader;
 
+bool useCache = true;
 GLuint texture;
+GLuint cache;
 
 // draws two triangles that cover the screen
 void drawWindowSizedQuad() {
@@ -43,6 +45,13 @@ void drawWindowSizedQuad() {
 
 void displayHandler() {
 
+    // if (useCache) {
+    //     int slice = (int)(mouse_x * GAMMA_SLICES);
+    //     char texturePath[50];
+    //     sprintf(texturePath, "assets/cache2/cache%02d.exr", slice);
+    //     printf("slice: %d\n", slice);
+    //     texture = exr_texture_load(texturePath);
+    // }
 
     glViewport(0, 0, width, height);
 
@@ -52,13 +61,18 @@ void displayHandler() {
 
 
     glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_3D, cache);
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_2D, texture);
 
     shader.bind();
 
     // glUniform1f( glGetUniformLocation(shader.id(), "tester"), mouse_x);
     glUniform1i( glGetUniformLocation(shader.id(), "exr"), 0);
-    glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 100 * mouse_x);
+    glUniform1i( glGetUniformLocation(shader.id(), "cache"), 1);
+    glUniform1i( glGetUniformLocation(shader.id(), "useCache"), useCache);
+    glUniform1f( glGetUniformLocation(shader.id(), "texcoord"), mouse_x);
+    glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 100 * mouse_y);
+
     // glUniform1f( glGetUniformLocation(shader.id(), "exposure"),  mouse_x);
 
 
@@ -109,10 +123,15 @@ int main(int argc, char** argv) {
     );
 
 
-    texture = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
-    texture = exr_texture_load("assets/cache/test.exr");
-    texture = exr_texture_load("./assets/cache/cache02.exr");
-    texture = exr_texture_load("./assets/cache/cache04.exr");
+    // texture = exr_texture_load("assets/cache/test.exr");
+    // texture = exr_texture_load("./assets/cache/cache02.exr");
+    // texture = exr_texture_load("./assets/cache/cache04.exr");
+    if (useCache) {
+        cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
+    }
+    else {
+        texture = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
+    }
 
 
     // tweak(&exposure);

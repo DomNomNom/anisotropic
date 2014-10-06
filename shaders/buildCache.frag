@@ -7,33 +7,33 @@ smooth in vec4 pos_project;
 
 uniform float time;
 
-#include random.glsl
-#include constants.glsl
-#include sampleLightmap.frag
-// #include to01.glsl
-#include rotationMatrix.glsl
+bool error = false;
 
-uniform float gamma;
+#include constants.glsl
+#include random.glsl
+#include sampleLightmap.frag
+#include utils.glsl
+#include rotationMatrix.glsl
+#include angles.glsl
+
+uniform float gammaTexCoord;
 uniform float range_tangent;
 uniform float range_bitangent;
 
-const uint gammaSamples = 500u;
-const float gammaVariance = 0.5;
+// const uint gammaSamples = 500u;
+// const float gammaVariance = 0.5;
+const uint gammaSamples = 10u;
+const float gammaVariance = 0.001;
 
 
 
 void main() {
-    float alpha = pos_uv.x * 2.0 * pi;
-    float beta  = pos_uv.y * 2.0 * pi;  // counter clockwise when viewed from +x
+    vec3 ABG_angles = getAngles(pos_uv.x, pos_uv.y, gammaTexCoord);
+    float alpha = ABG_angles.x;
+    float beta  = ABG_angles.y;  // counter clockwise when viewed from +x
+    float gamma = ABG_angles.z;
 
-    // float alpha = pos_project.x * pi;
-    // float beta  = pos_project.y * pi;  // counter clockwise when viewed from +x
-
-    // float alpha = pos.x * 1.0 * pi;
-    // float beta  = 0.0 * pi;  // counter clockwise when viewed from +x
-    // float gamma = pos.y * 0.5 * pi;
-
-    vec3 sampleDir = vec3(1.0, 0.0,  0.0);
+    vec3 sampleDir = vec3(1.0, 0.0,  0.0); // r
     vec3 tangent   = vec3(0.0, 0.0, -1.0);
     vec3 bitangent = cross(sampleDir, tangent); // (0, 1, 0)
 
@@ -51,7 +51,7 @@ void main() {
     }
     for (uint i=0u; i<gammaSamples; ++i) {
         mat3 gammaTransform = rotationMatrix3(
-            betaTransform * alphaTransform * bitangent, // ?
+            betaTransform * alphaTransform * bitangent,
             gamma + gammaVariance * rand()
         );
         fragColor += sample(gammaTransform * betaTransform * alphaTransform * sampleDir);
@@ -67,4 +67,8 @@ void main() {
     // fragColor = sample(normalize(vec3(1.0, pos.y, )))
 
     // fragColor = vec4(pos_uv.x, pos_uv.y, gamma, 1.0);
+    // fragColor =
+    if (error) {
+        fragColor = vec4(1.0, 0.0, 1.0, 1.0);;
+    }
 }
