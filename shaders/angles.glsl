@@ -15,8 +15,8 @@ struct Arc {
 
 
 vec3 getTexCoords(float alpha, float beta, float gamma) {
-    // current ranges: (0..tau  -pi/2..pi/2  0..tau)
-    vec3 texCoords = vec3(alpha, (beta+pi/2.0)*2.0, gamma);
+    // current ranges: (0..tau  -pi/2..pi/2  0..pi)
+    vec3 texCoords = vec3(alpha, (beta+pi/2.0)*2.0, gamma*2.0);
     return texCoords / tau;  //  0..tau  --> 0..1
 }
 
@@ -25,17 +25,17 @@ vec3 getAngles(float alpha, float beta, float gamma) {
     vec3 ABG_angles = vec3(alpha, beta, gamma) * tau;
     ABG_angles.y *= 0.5;
     ABG_angles.y -= pi/2.0;
+    ABG_angles.z *= 0.5;
     return ABG_angles;
 }
 
 
 // returns (alpha beta gamma) where the ranges are 0..1 therefore texture coordinates.
 // the angle ranges of
-// (alpha      beta      gamma ) are
-// (0..tau  -pi/2..pi/2  0..tau) and we return
-// (0..1        0..1     0..1  ) // for these ranges
+// names:                (alpha      beta      gamma )
+// returned values:      (0..1        0..1     0..1  )
+// corresponding angles: (0..tau  -pi/2..pi/2  0..pi)
 vec3 makeAlphaBetaGamma(Arc arc) {
-
     // make sure tangent.x >= 0
     if (arc.tangent.x < 0.0) {
         arc.tangent *= -1.0;
@@ -61,6 +61,15 @@ vec3 makeAlphaBetaGamma(Arc arc) {
         dot(arc.dir, elevationVector),  // arc-plane y
         dot(arc.dir, horizontal)        // arc-plane x
     );
+
+    // stop beta from being negative
+    if (gamma > pi) {
+        alpha += pi;
+        beta *= -1.0;
+        gamma += pi;
+        if (alpha > tau) { alpha -= tau; }
+        if (gamma > tau) { gamma -= tau; }
+    }
 
     vec3 texCoords = getTexCoords(alpha, beta, gamma);
 

@@ -25,9 +25,12 @@ float range_bitangent =  0.0  /360* 2.0*pi;
 GLuint window;
 Shader shader;
 
-bool useCache = true;
 GLuint texture;
+
+bool useCache = true;
 GLuint cache;
+uint cacheViewAxis = 1;
+
 
 // draws two triangles that cover the screen
 void drawWindowSizedQuad() {
@@ -70,6 +73,7 @@ void displayHandler() {
     glUniform1i( glGetUniformLocation(shader.id(), "exr"), 0);
     glUniform1i( glGetUniformLocation(shader.id(), "cache"), 1);
     glUniform1i( glGetUniformLocation(shader.id(), "useCache"), useCache);
+    glUniform1i( glGetUniformLocation(shader.id(), "cacheViewAxis"), cacheViewAxis);
     glUniform1f( glGetUniformLocation(shader.id(), "texcoord"), mouse_x);
     glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 100 * mouse_y);
 
@@ -93,6 +97,9 @@ void displayHandler() {
 
 void keyHandler(unsigned char key, int, int) {
     switch (key) {
+        case '1': cacheViewAxis = 1;    break;
+        case '2': cacheViewAxis = 2;    break;
+        case '3': cacheViewAxis = 3;    break;
         case 27: // Escape -> exit
             glutDestroyWindow(window);
             exit(0);
