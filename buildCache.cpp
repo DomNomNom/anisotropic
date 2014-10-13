@@ -97,7 +97,7 @@ void displayHandler() {
             gamma = gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
         }
         glUniform1f( glGetUniformLocation(shader.id(), "gammaTexCoord"),     gamma);
-        printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
+        // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
     }
     else if (cacheType == SPHERICAL_HARMONIC) {
         // TODO
@@ -118,6 +118,11 @@ void displayHandler() {
     }
     else {
         sprintf(filePath, "assets/cache2/cache%02d.exr", gammaSample);
+
+        float pixelDataOne[4];
+        glReadPixels((width*3)/4, (height*1)/4, 1, 1, GL_RGBA, GL_FLOAT, pixelDataOne);
+
+        printf("%03d %2f\n", gammaSample, pixelDataOne[2]);
         gammaSample += 1;
     }
     exr_texture_save(filePath, pixelData, width, height);

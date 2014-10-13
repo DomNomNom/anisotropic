@@ -57,7 +57,7 @@ bool exposure_enabled = true;
 
 float mouse_x = 0.0;
 float mouse_y = 0.0;
-float tester = 0.5;
+float anisotropy = DEFAULT_ANISOTROPY;
 float tester2 = 0.5;
 int tester_int = 0;
 
@@ -159,7 +159,8 @@ void DisplayHandler() {
     skyboxShader.bind();
 
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure"), exposure);
-    glUniform1f( glGetUniformLocation(skyboxShader.id(), "tester"), tester);
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure_enabled"), exposure_enabled);
+    glUniform1f( glGetUniformLocation(skyboxShader.id(), "anisotropy"), anisotropy);
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap"),     0); //Texture unit 0
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "lightmap_hdr"), 1); //Texture unit 1
     glUniform1i( glGetUniformLocation(skyboxShader.id(), "cache"),        2); //Texture unit 2
@@ -177,7 +178,7 @@ void DisplayHandler() {
 
         // set shader variables
         glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
-        glUniform1f( glGetUniformLocation(shader.id(), "tester" ),  tester);
+        glUniform1f( glGetUniformLocation(shader.id(), "anisotropy" ),  anisotropy);
         glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
         glUniform1i( glGetUniformLocation(shader.id(), "tester_int"), tester_int);
         glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
@@ -245,9 +246,14 @@ void KeyHandler(unsigned char key, int, int) {
             break;
         case 'a': animated  = !animated;    break;
         case 't': turntable = !turntable;   break;
-        case '[': tester_int -= 1;          break;
-        case ']': tester_int += 1;          break;
+        // case '[': tester_int -= 1;          break;
+        // case ']': tester_int += 1;          break;
         case 'e': exposure_enabled = !exposure_enabled; break;
+        case '1': tester_int = 0;   break;
+        case '2': tester_int = 1;   break;
+        case '3': tester_int = 2;   break;
+        case '4': tester_int = 3;   break;
+        case '5': tester_int = 4;   break;
     }
 
     // glutPostRedisplay();
@@ -342,8 +348,8 @@ int main(int argc, char** argv) {
         // TODO
     }
 
-    tweak(&tester);
-    // tweak(&tester2);
+    tweak(&anisotropy);
+    tweak(&tester2);
     tweak(&exposure);
 
     glutMainLoop();

@@ -1,4 +1,6 @@
 
+smooth in vec4 pos_project;
+uniform float time;
 
 vec2 randomV = pos_project.xy * sin(time);  // requires access to screenspace coordinate
 float rand() { // returns a random value within the range -1.0 to 1.0

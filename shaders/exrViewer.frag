@@ -8,11 +8,17 @@ smooth in vec4 pos_project;
 uniform float exposure;
 uniform float tester;
 
+uniform bool useExposure;
 uniform bool useCache;
 uniform sampler2D exr;
 uniform sampler3D cache;
 uniform float texcoord;
+uniform float time;
 uniform int cacheViewAxis;
+
+
+#include random.glsl
+
 
 void main() {
     if (useCache) {
@@ -26,7 +32,10 @@ void main() {
     else {
         fragColor = texture(exr, pos_uv.xy);
     }
-    fragColor = 1.0 - exp(-exposure * fragColor);
+
+    if (useExposure) {
+        fragColor = 1.0 - exp(-exposure * fragColor);
+    }
 
     // fragColor = vec4(
     //     pos_uv.x,

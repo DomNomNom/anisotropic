@@ -1,8 +1,12 @@
 
+vec3 debugVector;
+
 // requires
 
-#include random.glsl
+// #include random.glsl
+
 #include constants.glsl
+// #include angles.glsl
 #include sampleLightmap.frag
 
 const int availableSamples = 162;
@@ -100,70 +104,28 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
 // g: gammaNormal
 // dot(r, g) == 0.0
 vec4 cacheSample(vec3 r, vec3 g) {
+    return vec4(0.0, to01(r.y), 0.0, 1.0);
+    Fan fan = Fan(r, g);
+    vec3 texCoords = makeTexCoords(fan);
+    Fan checkFan = makeFan(texCoords);
 
-    // horizontal is the line at which the arc meets the x/z plane.
-    vec3 horizontal = normalize(cross(g, vec3(0.0, 1.0, 0.0)));  // TODO: Optimize
-
-    // if (horizontal.z < 0.0) horizontal *= -1.0; // force horizontal.z >= 0
-    float alpha = acos(horizontal.x); // == dot(horizontal, vec3(1.0, 0.0, 0.0))
-    if (horizontal.z > 0) alpha = 2.0*pi-alpha; // case when alpha < 0 (or >180)
-
-      // a vector tangent to the arc at the horizontal plane
-    vec3 elevationVector = normalize(cross(g, horizontal));
-    float beta = asin(elevationVector.y);
-
-    // float beta1 = -acos(g.y);
-
-    // some assertion statements
-    if (!(
-        isZero(dot(r, g))                       &&
-        isZero(dot(horizontal, g))              &&
-        // isZero(beta - beta1)                    &&
-        isZero(length(cross(cross(horizontal, r), g)))   // the outer cross() asserts that the vectors are scalar multiples of eachother
-    )) {
-        error = true;
-        return errorColor;
-    }
-
-    // if (elevationVector.y < 0) return errorColor;beta *= -1.0; // ensure the sign is correct
+    // return vec4(0.0, 0.0, texCoords.z, 1.0);
+    // return vec4(0.0, texCoords.y,  0.0, 1.0);
+    // return vec4(texCoords.x, 0.0 , 0.0, 1.0);
 
 
+    checkFan.dir    = normalize(checkFan.dir);
+    checkFan.g      = normalize(checkFan.g);
+    fan.dir         = normalize(fan.dir);
+    fan.g           = normalize(fan.g);
+    if (!isClose(fan.dir,    checkFan.dir     )) { return vec4(to01(fan.dir - checkFan.dir), 1.0); }
+    // if (!(
+    //     isClose(fan.g,  checkFan.g) ||
+    //     isClose(fan.g, -checkFan.g)
+    // )) {
+    //     return vec4(0.0, 1.0, 0.0, 1.0);
+    // }
 
-    // float gamma = -acos(dot(normalReflectedDir, horizontal));
-    // if (normalReflectedDir.y < 0) gamma *= -1.0; // ensure the sign is correct
-    // float gamma = asin(-0.99999 * length(cross(horizontal, normalReflectedDir))); // ? == asin(-length(cross(horizontal, normalReflectedDir)))
-    // float gamma = asin(-1.00001 * length(cross(horizontal, normalReflectedDir)));
-    // float gamma = asin(clamp(-1.0 * length(cross(horizontal, r)), -1.0, 1.0));
-    float gamma = acos(dot(r, horizontal));
-    // if (r.y < 0.0) gamma = 2.0*pi-gamma;
-    if (r.y < 0.0) gamma = -gamma;
-
-    // // cartesian coords
-    // beta = radians(90.0);
-    // gamma = asin(normalReflectedDir.y);
-    // alpha = atan(-normalReflectedDir.z, normalReflectedDir.x);
-
-    vec3 texCoords = vec3(alpha, beta, 2.0 * gamma);
-    // texCoords = texCoords.xzy;
-    texCoords /= 2.0 * pi;  //  (0 2pi)  --> (0 1)
-
-    // these should never happen but they do ocasionally :(
-    // if (texCoords.x < -1.0 || texCoords.x > 1.0) return errorColor;
-    // if (texCoords.y < -1.0 || texCoords.y > 1.0) return errorColor;
-    // if (texCoords.z < -1.0 || texCoords.z > 1.0) return errorColor;
-
-    // return vec4(to01(elevationVector), 1.0);
-
-    // return vec4(
-    //     0.0,
-    //     to01(texCoords.z), // to01(gamma / pi),
-    //     0.0,
-    //     1.0
-    // );
-
-    // return vec4(to01(normalize(normalReflectedDir)), 1.0);
-    // return sample(pos_model.xyz);
-    // return vec4(to01(texCoords), 1.0);
     return texture(cache, texCoords);
 }
 
@@ -179,6 +141,13 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
 
     // return cacheSample(pos_model.xyz, normalize(cross(pos_model.xyz, biTangent)));
     if (tester_int == 0) {
+        // return vec4(g.y, 0.0, -g.y, 1.0);
+        // vec3 e = normalize(cross(normalReflectedDir, g));
+        // e = normalize(cross(e, g));
+        // cacheSample(normalReflectedDir, g);
+        // return vec4(debugVector, 1.0);
+        // return vec4(e.y, 0.0, -e.y, 1.0);
+        // return sampleHdrLightmap(g);
         return cacheSample(normalReflectedDir, g);
     }
 

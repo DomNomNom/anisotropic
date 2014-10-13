@@ -9,6 +9,7 @@
 #include "shader.h"
 #include "textures.h"
 #include "config.h"
+#include "mytime.h"
 
 const int width  = 256 * 2;
 const int height = 256 * 2;
@@ -27,10 +28,12 @@ Shader shader;
 
 GLuint texture;
 
+bool useExposure = false;
 bool useCache = true;
 GLuint cache;
 uint cacheViewAxis = 1;
 
+float seconds = 0.0;
 
 // draws two triangles that cover the screen
 void drawWindowSizedQuad() {
@@ -47,6 +50,7 @@ void drawWindowSizedQuad() {
 }
 
 void displayHandler() {
+    seconds += time_dt();
 
     // if (useCache) {
     //     int slice = (int)(mouse_x * GAMMA_SLICES);
@@ -73,8 +77,10 @@ void displayHandler() {
     glUniform1i( glGetUniformLocation(shader.id(), "exr"), 0);
     glUniform1i( glGetUniformLocation(shader.id(), "cache"), 1);
     glUniform1i( glGetUniformLocation(shader.id(), "useCache"), useCache);
+    glUniform1i( glGetUniformLocation(shader.id(), "useExposure"), useExposure);
     glUniform1i( glGetUniformLocation(shader.id(), "cacheViewAxis"), cacheViewAxis);
     glUniform1f( glGetUniformLocation(shader.id(), "texcoord"), mouse_x);
+    glUniform1f( glGetUniformLocation(shader.id(), "time"), seconds);
     glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 100 * mouse_y);
 
     // glUniform1f( glGetUniformLocation(shader.id(), "exposure"),  mouse_x);
@@ -100,6 +106,7 @@ void keyHandler(unsigned char key, int, int) {
         case '1': cacheViewAxis = 1;    break;
         case '2': cacheViewAxis = 2;    break;
         case '3': cacheViewAxis = 3;    break;
+        case 'e': useExposure = !useExposure;  break;
         case 27: // Escape -> exit
             glutDestroyWindow(window);
             exit(0);
