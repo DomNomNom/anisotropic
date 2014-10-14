@@ -27,8 +27,38 @@ const uint gammaSamples = 10u;
 const float gammaVariance = 0.001;
 // accumulates random samples on the fan described by the texCoords
 vec4 accumulateSamples(vec3 texCoords) {
-    return sample(makeFan(texCoords).dir);
 
+    return vec4(texCoords, 1.0);
+
+    // assert 0 <= texCoords <= 1
+    if (!(
+        0.0 <= texCoords.x && texCoords.x <= 1.0 &&
+        0.0 <= texCoords.y && texCoords.y <= 1.0 &&
+        0.0 <= texCoords.z && texCoords.z <= 1.0 &&
+        true
+    )) {
+        // error = true;
+    }
+
+    Fan fan = makeFan(texCoords);
+    vec3 testTexCoords = makeTexCoords(fan);
+
+    vec3 texCoordsDiff = texCoords - testTexCoords;
+    if (!isZero(texCoordsDiff)) {
+        error = true;
+    }
+
+    // vec3 ret;
+    // ret = to01(texCoordsDiff);
+    // return vec4(ret, 1.0);
+
+    return sample(fan.dir);  // only one sample in the fans firection
+
+
+
+
+
+    // vary samples along the fans arc
     vec4 accumulator = vec4(0.0);
     if (gammaSamples < 1u) {
         accumulator = vec4(0.0, 1.0, 0.0, 1.0);  // I am error

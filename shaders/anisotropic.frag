@@ -103,9 +103,8 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
 // r: reflectedDir
 // g: gammaNormal
 // dot(r, g) == 0.0
-vec4 cacheSample(vec3 r, vec3 g) {
+vec4 cacheSample(Fan fan) {
     // return vec4(0.0, to01(r.y), 0.0, 1.0);
-    Fan fan = Fan(r, g);
     vec3 texCoords = makeTexCoords(fan);
     // Fan checkFan = makeFan(texCoords);
 
@@ -126,11 +125,6 @@ vec4 cacheSample(vec3 r, vec3 g) {
     //     return vec4(to01(fan.g   - checkFan.g  ), 1.0);
     // }
 
-    // // return vec4(r.y, -r.y, 0.0, 1.0 );
-    // // return vec4(checkFan.dir.y, -checkFan.dir.y, 0.0, 1.0 );
-    // // return sample(r);
-    // // return sample(fan.dir);
-    // // return sample(checkFan.dir);
 
     return texture(cache, texCoords);
 }
@@ -138,8 +132,9 @@ vec4 cacheSample(vec3 r, vec3 g) {
 
 vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     vec3 biTangent = normalize(cross(normal, tangent));
-    vec3 normalReflectedDir = normalize(reflect(cam2pos, normal));
-    vec3 g = normalize(cross(normalReflectedDir, biTangent));  // gammaNormal
+    vec3 r = normalize(reflect(cam2pos, normal));
+    vec3 g = normalize(cross(r, biTangent));  // gammaNormal
+    Fan fan = Fan(r, g);
 
     // // the debug ring of truth
     // float r = length(pos_model.zy);
@@ -147,22 +142,22 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
 
     // return cacheSample(pos_model.xyz, normalize(cross(pos_model.xyz, biTangent)));
     if (tester_int == 0) {
-        // return vec4(g.y, 0.0, -g.y, 1.0);
-        // vec3 e = normalize(cross(normalReflectedDir, g));
-        // e = normalize(cross(e, g));
-        // cacheSample(normalReflectedDir, g);
-        // return vec4(debugVector, 1.0);
-        // return vec4(e.y, 0.0, -e.y, 1.0);
-        // return sampleHdrLightmap(g);
-        // return vec4(to01(g), 1.0);
-
-        return cacheSample(normalReflectedDir, g);
+        return cacheSample(fan);
     }
 
     // TODO: revert
     if (tester_int == 1) {
-        vec3 texCoords = makeTexCoords(Fan(normalReflectedDir, g));
+        vec3 texCoords = makeTexCoords(fan);
         return accumulateSamples(texCoords);
+    }
+    if (tester_int == 2) {
+        vec3 texCoords = makeTexCoords(fan);
+        // texCoords = clamp(texCoords, 0.0, 1.0);
+        texCoords = makeTexCoords(makeFan(texCoords));
+        return accumulateSamples(texCoords);
+    }
+    if (tester_int == 3) {
+        return sample(r);
     }
 
 
@@ -204,11 +199,11 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
         vec3 reflectedDir;
 
         if (tester_int == 1) {
-            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * normalReflectedDir;
+            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * r;
         }
         else if (tester_int == 2) {
             // sampled arc approach
-            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * anisotropy) * normalReflectedDir;
+            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * anisotropy) * r;
         }
         else if (tester_int == 3) {
             // varied normal approach
