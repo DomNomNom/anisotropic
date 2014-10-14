@@ -61,7 +61,7 @@ vec3 makeTexCoords(Fan fan) {
 
     // vectors for alpha and gamma space
     vec3 horizontal   = normalize(vec3( fan.g.x, 0.0,  fan.g.z)); // the hoizontal direction of fan.g
-    vec3 biHorizontal = -normalize(vec3(-fan.g.z, 0.0,  fan.g.x)); // cross(fan.g, (0 1 0)). The line at which the expaned fan meets the x/z plane
+    vec3 biHorizontal = normalize(vec3( fan.g.z, 0.0, -fan.g.x)); // cross(fan.g, (0 1 0)). The line at which the expaned fan meets the x/z plane
     vec3 elevationVector = cross(fan.g, biHorizontal);            // a vector tangent to the fan at the horizontal plane
 
 
@@ -96,13 +96,15 @@ vec3 makeTexCoords(Fan fan) {
         // gamma -= pi;
         // gamma -= pi/2;
         // gamma *= 40;
+
+        // alpha += pi;
+        // if (alpha > tau) { alpha -= tau; }
+        // beta *= -1.0;
+        gamma = -gamma + tau;
+        // error = true;
     }
 
     vec3 texCoords = getTexCoords(alpha, beta, gamma);
-    if (gamma > pi) {
-        // WTF WTFWTF WTFWTFWTFWRF
-        texCoords.z = -texCoords.z +2;
-    }
 
     // some assertion statements
     if (!(
@@ -129,7 +131,7 @@ vec3 makeTexCoords(Fan fan) {
 
         true
     )) {
-        error = true;
+        // error = true;
     }
 
     return texCoords;

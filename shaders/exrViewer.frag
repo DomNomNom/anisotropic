@@ -3,7 +3,7 @@
 out vec4 fragColor;
 
 smooth in vec4 pos_uv;
-smooth in vec4 pos_project;
+// smooth in vec4 pos_project;
 
 uniform float exposure;
 uniform float tester;
@@ -13,7 +13,6 @@ uniform bool useCache;
 uniform sampler2D exr;
 uniform sampler3D cache;
 uniform float texcoord;
-uniform float time;
 uniform int cacheViewAxis;
 
 

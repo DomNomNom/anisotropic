@@ -104,27 +104,33 @@ float ward_spec(vec3 n, vec3 l, vec3 r, vec3 x, vec3 y, float ax, float ay) {
 // g: gammaNormal
 // dot(r, g) == 0.0
 vec4 cacheSample(vec3 r, vec3 g) {
-    return vec4(0.0, to01(r.y), 0.0, 1.0);
+    // return vec4(0.0, to01(r.y), 0.0, 1.0);
     Fan fan = Fan(r, g);
     vec3 texCoords = makeTexCoords(fan);
-    Fan checkFan = makeFan(texCoords);
+    // Fan checkFan = makeFan(texCoords);
 
-    // return vec4(0.0, 0.0, texCoords.z, 1.0);
-    // return vec4(0.0, texCoords.y,  0.0, 1.0);
-    // return vec4(texCoords.x, 0.0 , 0.0, 1.0);
+    // // return vec4(0.0, 0.0, texCoords.z, 1.0);
+    // // return vec4(0.0, texCoords.y,  0.0, 1.0);
+    // // return vec4(texCoords.x, 0.0 , 0.0, 1.0);
 
 
-    checkFan.dir    = normalize(checkFan.dir);
-    checkFan.g      = normalize(checkFan.g);
-    fan.dir         = normalize(fan.dir);
-    fan.g           = normalize(fan.g);
-    if (!isClose(fan.dir,    checkFan.dir     )) { return vec4(to01(fan.dir - checkFan.dir), 1.0); }
+    // checkFan.dir    = normalize(checkFan.dir);
+    // checkFan.g      = normalize(checkFan.g);
+    // fan.dir         = normalize(fan.dir);
+    // fan.g           = normalize(fan.g);
+    // if (!isClose(fan.dir,    checkFan.dir     )) { return vec4(to01(fan.dir - checkFan.dir), 1.0); }
     // if (!(
     //     isClose(fan.g,  checkFan.g) ||
     //     isClose(fan.g, -checkFan.g)
     // )) {
-    //     return vec4(0.0, 1.0, 0.0, 1.0);
+    //     return vec4(to01(fan.g   - checkFan.g  ), 1.0);
     // }
+
+    // // return vec4(r.y, -r.y, 0.0, 1.0 );
+    // // return vec4(checkFan.dir.y, -checkFan.dir.y, 0.0, 1.0 );
+    // // return sample(r);
+    // // return sample(fan.dir);
+    // // return sample(checkFan.dir);
 
     return texture(cache, texCoords);
 }
@@ -148,7 +154,15 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
         // return vec4(debugVector, 1.0);
         // return vec4(e.y, 0.0, -e.y, 1.0);
         // return sampleHdrLightmap(g);
+        // return vec4(to01(g), 1.0);
+
         return cacheSample(normalReflectedDir, g);
+    }
+
+    // TODO: revert
+    if (tester_int == 1) {
+        vec3 texCoords = makeTexCoords(Fan(normalReflectedDir, g));
+        return accumulateSamples(texCoords);
     }
 
 
