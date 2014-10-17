@@ -28,7 +28,7 @@ const float gammaVariance = 0.001;
 // accumulates random samples on the fan described by the texCoords
 vec4 accumulateSamples(vec3 texCoords) {
 
-    return vec4(texCoords, 1.0);
+    // return vec4(texCoords, 1.0);
 
     // assert 0 <= texCoords <= 1
     if (!(
@@ -41,11 +41,22 @@ vec4 accumulateSamples(vec3 texCoords) {
     }
 
     Fan fan = makeFan(texCoords);
+    return vec4(to01(fan.g), 1.0);
     vec3 testTexCoords = makeTexCoords(fan);
 
+    // return vec4(testTexCoords, 1.0);
     vec3 texCoordsDiff = texCoords - testTexCoords;
+    // return vec4(to01(texCoordsDiff), 1.0);
+    // if (isZero(texCoordsDiff.z)) {
+    //     texCoordsDiff.y = 0.0;
+    // }
+
+    // return vec4((texCoords), 1.0);
+    return vec4((testTexCoords), 1.0);
+
     if (!isZero(texCoordsDiff)) {
-        error = true;
+        return vec4(to01(texCoordsDiff), 1.0);
+        // error = true;
     }
 
     // vec3 ret;

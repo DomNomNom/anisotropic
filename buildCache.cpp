@@ -11,8 +11,8 @@
 #include "mytime.h"
 #include "config.h"
 
-const int width  = 256 * 2;
-const int height = 256 * 2;
+const int width  = RESOLUTION_ALPHA;
+const int height = RESOLUTION_BETA;
 const float pi = 3.141592653589793;
 
 float pixelData[width * height * 4];
@@ -90,11 +90,11 @@ void displayHandler() {
 
     if (cacheType == ARC) {
         float gamma;
-        if (gammaSample >= GAMMA_SLICES) {
+        if (gammaSample >= RESOLUTION_GAMMA) {
             gamma =  mouse_x;
         }
         else {
-            gamma = gammaSample / float(GAMMA_SLICES); // gamma in the range [0, 1)
+            gamma = gammaSample / float(RESOLUTION_GAMMA); // gamma in the range [0, 1)
         }
         glUniform1f( glGetUniformLocation(shader.id(), "gammaTexCoord"),     gamma);
         // printf("gamma (degrees) %3.f  y %3.f\n", gamma*360.0, mouse_y*360.0);
@@ -111,7 +111,7 @@ void displayHandler() {
     // save output
     glReadPixels(0, 0, width, height, GL_RGBA, GL_FLOAT, pixelData);
     char filePath[200];
-    if (gammaSample >= GAMMA_SLICES) {
+    if (gammaSample >= RESOLUTION_GAMMA) {
         glutDestroyWindow(window);
         exit(0);
         sprintf(filePath, "assets/cache/test.exr");

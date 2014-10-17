@@ -24,7 +24,6 @@ uniform float range_bitangent;
 void main() {
     vec3 texCoords = vec3(pos_uv.x, pos_uv.y, gammaTexCoord);
     fragColor = accumulateSamples(texCoords);  // this is the expensive bit
-    fragColor = vec4(texCoords, 1.0);
 
     if (error) {
         fragColor = vec4(1.0, 0.0, 1.0, 1.0);

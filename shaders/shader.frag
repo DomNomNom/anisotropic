@@ -19,6 +19,7 @@ uniform float tester2;
 uniform int tester_int;
 uniform vec2 mouse;
 uniform vec4 eye;
+uniform vec3 cacheResolution;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;

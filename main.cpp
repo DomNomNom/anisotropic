@@ -60,6 +60,16 @@ float mouse_y = 0.0;
 float anisotropy = DEFAULT_ANISOTROPY;
 float tester2 = 0.5;
 int tester_int = 0;
+const glm::vec3 cacheResolution = glm::vec3(
+    RESOLUTION_ALPHA,
+    RESOLUTION_BETA,
+    RESOLUTION_GAMMA
+);
+// const glm::vec3 noInterpBorderScale = glm::vec3(
+//     (float)(RESOLUTION_ALPHA - 1) / RESOLUTION_ALPHA,
+//     (float)(RESOLUTION_BETA  - 1) / RESOLUTION_BETA,
+//     (float)(RESOLUTION_GAMMA - 1) / RESOLUTION_GAMMA
+// );
 
 bool viewLock = false;
 bool animated = false;
@@ -177,16 +187,17 @@ void DisplayHandler() {
         shader.bind();
 
         // set shader variables
-        glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
-        glUniform1f( glGetUniformLocation(shader.id(), "anisotropy" ),  anisotropy);
-        glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
         glUniform1i( glGetUniformLocation(shader.id(), "tester_int"), tester_int);
         glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
         glUniform1i( glGetUniformLocation(shader.id(), "exposure_enabled"),  exposure_enabled);
-        glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap"),     0); //Texture unit 0
         glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
         glUniform1i( glGetUniformLocation(shader.id(), "numSamples"), numSamples);
+        glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
+        glUniform1f( glGetUniformLocation(shader.id(), "anisotropy" ),  anisotropy);
+        glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
+        glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
+        glUniform3f(glGetUniformLocation(shader.id(), "cacheResolution"), cacheResolution.x, cacheResolution.y, cacheResolution.z);
         glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
         glUniform4fv(glGetUniformLocation(shader.id(), "eye"), 1, value_ptr(eye));
         glUniform4fv(glGetUniformLocation(shader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
@@ -342,7 +353,7 @@ int main(int argc, char** argv) {
 
     cache = 0;
     if (cacheType == ARC) {
-        cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
+        cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
     }
     else if (cacheType == SPHERICAL_HARMONIC) {
         // TODO

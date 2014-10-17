@@ -125,6 +125,8 @@ vec4 cacheSample(Fan fan) {
     //     return vec4(to01(fan.g   - checkFan.g  ), 1.0);
     // }
 
+    // texCoords *= noInterpBorderScale;
+    // texCoords += vec3(0.5) * ;
 
     return texture(cache, texCoords);
 }

@@ -31,7 +31,7 @@ GLuint texture;
 bool useExposure = false;
 bool useCache = true;
 GLuint cache;
-uint cacheViewAxis = 1;
+uint cacheViewAxis = 3;
 
 float seconds = 0.0;
 
@@ -53,7 +53,7 @@ void displayHandler() {
     seconds += time_dt();
 
     // if (useCache) {
-    //     int slice = (int)(mouse_x * GAMMA_SLICES);
+    //     int slice = (int)(mouse_x * RESOLUTION_GAMMA);
     //     char texturePath[50];
     //     sprintf(texturePath, "assets/cache2/cache%02d.exr", slice);
     //     printf("slice: %d\n", slice);
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
     // texture = exr_texture_load("./assets/cache/cache02.exr");
     // texture = exr_texture_load("./assets/cache/cache04.exr");
     if (useCache) {
-        cache = exr_cubetex_load("assets/cache2/cache", GAMMA_SLICES);
+        cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
     }
     else {
         texture = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
