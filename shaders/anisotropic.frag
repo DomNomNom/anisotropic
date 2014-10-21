@@ -10,7 +10,6 @@ vec3 debugVector;
 #include sampleLightmap.frag
 
 const int availableSamples = 162;
-uniform int numSamples;
 uniform vec3[availableSamples] sampleDirections;
 uniform sampler3D cache;
 
@@ -154,7 +153,6 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     }
     if (tester_int == 2) {
         vec3 texCoords = makeTexCoords(fan);
-        // texCoords = clamp(texCoords, 0.0, 1.0);
         texCoords = makeTexCoords(makeFan(texCoords));
         return accumulateSamples(texCoords);
     }

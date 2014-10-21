@@ -4,6 +4,8 @@
 
 uniform samplerCube lightmap;
 uniform sampler2D lightmap_hdr;
+uniform float anisotropy;
+uniform int numSamples;
 
 vec4 sampleHdrLightmap(vec3 v) {
     // TODO: special case when abs(v.z)+abs(v.x) == 0
@@ -21,10 +23,10 @@ vec4 sample(vec3 dir) {
     return texture(lightmap, dir);
 }
 
-// const uint gammaSamples = 500u;
+// const uint numSamples = 500u;
 // const float gammaVariance = 0.5;
-const uint gammaSamples = 10u;
-const float gammaVariance = 0.001;
+// const uint numSamples = 100u;
+// const float gammaVariance = 0.001;
 // accumulates random samples on the fan described by the texCoords
 vec4 accumulateSamples(vec3 texCoords) {
 
@@ -41,7 +43,6 @@ vec4 accumulateSamples(vec3 texCoords) {
     }
 
     Fan fan = makeFan(texCoords);
-    return vec4(to01(fan.g), 1.0);
     vec3 testTexCoords = makeTexCoords(fan);
 
     // return vec4(testTexCoords, 1.0);
@@ -51,19 +52,21 @@ vec4 accumulateSamples(vec3 texCoords) {
     //     texCoordsDiff.y = 0.0;
     // }
 
-    // return vec4((texCoords), 1.0);
-    return vec4((testTexCoords), 1.0);
+    // return vec4(texCoords, 1.0);
+    // return vec4(testTexCoords, 1.0);
+    // return vec4(to01(testTexCoords), 1.0);
+    // return vec4(to01(texCoordsDiff), 1.0);
 
     if (!isZero(texCoordsDiff)) {
         return vec4(to01(texCoordsDiff), 1.0);
-        // error = true;
+        error = true;
     }
 
     // vec3 ret;
     // ret = to01(texCoordsDiff);
     // return vec4(ret, 1.0);
 
-    return sample(fan.dir);  // only one sample in the fans firection
+    // return sample(fan.dir);  // only one sample in the fans firection
 
 
 
@@ -71,15 +74,15 @@ vec4 accumulateSamples(vec3 texCoords) {
 
     // vary samples along the fans arc
     vec4 accumulator = vec4(0.0);
-    if (gammaSamples < 1u) {
+    if (numSamples < 1) {
         accumulator = vec4(0.0, 1.0, 0.0, 1.0);  // I am error
     }
-    for (uint i=0u; i<gammaSamples; ++i) {
+    for (int i=0; i<numSamples; ++i) {
         vec3 sampleCoord = texCoords;
-        sampleCoord.z += gammaVariance * rand();
+        sampleCoord.z += anisotropy * rand();
         accumulator += sample(
             makeFan(sampleCoord).dir
         );
     }
-    return accumulator / float(gammaSamples);
+    return accumulator / float(numSamples);
 }

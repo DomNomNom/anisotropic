@@ -87,6 +87,9 @@ void displayHandler() {
     glUniform1i( glGetUniformLocation(shader.id(), "lightmap_hdr"), 1); //Texture unit 1
     glUniform1f( glGetUniformLocation(shader.id(), "range_tangent"),    range_tangent  );
     glUniform1f( glGetUniformLocation(shader.id(), "range_bitangent"),  range_bitangent);
+    glUniform1f( glGetUniformLocation(shader.id(), "anisotropy"),  DEFAULT_ANISOTROPY);
+    glUniform1i( glGetUniformLocation(shader.id(), "numSamples"), NUMSAMPLES_CACHE);
+
 
     if (cacheType == ARC) {
         float gamma;
@@ -122,7 +125,7 @@ void displayHandler() {
         float pixelDataOne[4];
         glReadPixels((width*3)/4, (height*1)/4, 1, 1, GL_RGBA, GL_FLOAT, pixelDataOne);
 
-        printf("%03d %2f\n", gammaSample, pixelDataOne[2]);
+        printf("%03ed %2f\n", gammaSample, pixelDataOne[2]);
         gammaSample += 1;
     }
     exr_texture_save(filePath, pixelData, width, height);

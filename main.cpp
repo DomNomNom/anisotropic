@@ -82,7 +82,7 @@ glm::vec4 lightVectors[] = {
     normalize(  glm::vec4(  0.0, -1.0, 0.0, 0.0)), // spotDir
 };
 
-const int numSamples = 100;//162;
+const int numSamples = NUMSAMPLES_LIVE;
 glm::vec4 sampleDirections[numSamples];
 
 
@@ -240,6 +240,11 @@ void MouseMoveHander(int x, int y){
 
 void MouseHandler(int, int state, int, int) {
     if (state == GLUT_DOWN) {
+        if (!viewLock) {
+            printf("\n");
+            printf("mouse_x = %f;\n", mouse_x);
+            printf("mouse_y = %f;\n", mouse_y);
+        }
         viewLock  = !viewLock;
     }
     // glutPostRedisplay();
@@ -265,6 +270,23 @@ void KeyHandler(unsigned char key, int, int) {
         case '3': tester_int = 2;   break;
         case '4': tester_int = 3;   break;
         case '5': tester_int = 4;   break;
+        case '6': tester_int = 5;   break;
+        case '7': tester_int = 6;   break;
+        case '8': tester_int = 7;   break;
+        case '9': tester_int = 8;   break;
+
+        // specific camera angles
+        case 'm':
+            mouse_x = 0.361667;
+            mouse_y = 0.393333;
+            viewLock = true;
+            break;
+        case 'n':
+            mouse_x = 0.460000;
+            mouse_y = 0.761667;
+            viewLock = true;
+            break;
+
     }
 
     // glutPostRedisplay();
@@ -277,7 +299,7 @@ void AnimateScene(void) {
     framecount += 1;
     if (floor(seconds) > seconds_floor) { // we are in a new second
         seconds_floor = floor(seconds);
-        sprintf(window_title, "Anisotropic Shader!    %2dfps   :D", framecount);
+        sprintf(window_title, "Anisotropic Shader: %.3f  %02dfps", anisotropy, framecount);
         glutSetWindowTitle(window_title);
         framecount = 0;
     }
@@ -359,6 +381,7 @@ int main(int argc, char** argv) {
         // TODO
     }
 
+    // anisotropy = DEFAULT_ANISOTROPY;
     tweak(&anisotropy);
     tweak(&tester2);
     tweak(&exposure);

@@ -14,7 +14,6 @@ smooth in vec4 lights[4];
 
 uniform bool exposure_enabled;
 uniform float exposure = 1.0;
-uniform float anisotropy;
 uniform float tester2;
 uniform int tester_int;
 uniform vec2 mouse;
@@ -51,10 +50,10 @@ void main() {
     fragColor = anisotropic(normal, -pos2cam.xyz, tangent, anisotropy);
     // fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
 
-    float debugRadius = sqrt(pos_world.x*pos_world.x + pos_world.y*pos_world.y);
-    if (debugRadius > 0.01 && debugRadius < 0.1 && pos_world.z > 0.0) {
-        fragColor = vec4(0.0,0.0,1.0, 1.0);
-    }
+    // float debugRadius = sqrt(pos_world.x*pos_world.x + pos_world.y*pos_world.y);
+    // if (debugRadius > 0.01 && debugRadius < 0.1 && pos_world.z > 0.0) {
+    //     fragColor = vec4(0.0,0.0,1.0, 1.0);
+    // }
 
     if (error) {
         fragColor += errorColor;
