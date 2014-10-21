@@ -58,7 +58,7 @@ bool exposure_enabled = true;
 float mouse_x = 0.0;
 float mouse_y = 0.0;
 float anisotropy = DEFAULT_ANISOTROPY;
-float tester2 = 0.5;
+float tester2 = 50;
 int tester_int = 0;
 const glm::vec3 cacheResolution = glm::vec3(
     RESOLUTION_ALPHA,
@@ -82,8 +82,8 @@ glm::vec4 lightVectors[] = {
     normalize(  glm::vec4(  0.0, -1.0, 0.0, 0.0)), // spotDir
 };
 
-const int numSamples = NUMSAMPLES_LIVE;
-glm::vec4 sampleDirections[numSamples];
+int numSamples = NUMSAMPLES_LIVE;
+// glm::vec4 sampleDirections[numSamples];
 
 
 float light_direction[] = {1.0f, 0.0f, 0.0f};
@@ -157,6 +157,9 @@ void DisplayHandler() {
     eye = glm::vec4(0.0, 0.0, cameraDistance, 1.0);
     eye = eyeTransform * eye;
     viewMatrix = lookAt(vec3(eye), vec3(0, 0, 0), UP);
+    printf("eye: %f %f %f\n",
+        eye.x, eye.y, eye.z
+    );
 
     normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
     projectionMatrix = perspective(
@@ -186,6 +189,8 @@ void DisplayHandler() {
     if (useShader) {
         shader.bind();
 
+        numSamples = (int) tester2;
+
         // set shader variables
         glUniform1i( glGetUniformLocation(shader.id(), "tester_int"), tester_int);
         glUniform1f( glGetUniformLocation(shader.id(), "exposure"), exposure);
@@ -198,7 +203,7 @@ void DisplayHandler() {
         glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform3f(glGetUniformLocation(shader.id(), "cacheResolution"), cacheResolution.x, cacheResolution.y, cacheResolution.z);
-        glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
+        // glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
         glUniform4fv(glGetUniformLocation(shader.id(), "eye"), 1, value_ptr(eye));
         glUniform4fv(glGetUniformLocation(shader.id(), "lightVectors"), 4, value_ptr(lightVectors[0]));
         glUniformMatrix4fv(glGetUniformLocation(shader.id(), "modelMatrix"     ), 1, false, value_ptr(modelMatrix       ));
@@ -351,14 +356,14 @@ int main(int argc, char** argv) {
     skybox.CreateGLPolyGeometry();
 
     // initialize sampleDirections
-    G308_Geometry *temp = new G308_Geometry();
-    temp->ReadOBJ("assets/sphere162.obj");
-    for (int i=0; i<numSamples; ++i) {
-        sampleDirections[i].x = temp->m_pVertexArray[i].x;
-        sampleDirections[i].y = temp->m_pVertexArray[i].y;
-        sampleDirections[i].z = temp->m_pVertexArray[i].z;
-    }
-    delete temp;
+    // G308_Geometry *temp = new G308_Geometry();
+    // temp->ReadOBJ("assets/sphere162.obj");
+    // for (int i=0; i<numSamples; ++i) {
+        // sampleDirections[i].x = temp->m_pVertexArray[i].x;
+        // sampleDirections[i].y = temp->m_pVertexArray[i].y;
+        // sampleDirections[i].z = temp->m_pVertexArray[i].z;
+    // }
+    // delete temp;
 
     shader.init(
         "shader.vert",
