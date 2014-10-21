@@ -1,7 +1,7 @@
 // shared constants between main.cpp and buildCache.cpp
 
 // #define DEFAULT_ANISOTROPY 0.001
-#define DEFAULT_ANISOTROPY 0.05
+#define DEFAULT_ANISOTROPY 0.01
 #define RESOLUTION_ALPHA 256 * 2
 #define RESOLUTION_BETA 256 * 2
 #define RESOLUTION_GAMMA 64

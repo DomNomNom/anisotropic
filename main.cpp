@@ -52,7 +52,7 @@ mat4 eyeTransform;
 float turntableAngle = 0.f;
 float scaleFactor = 1.f;
 float cameraDistance = 4.5;
-float exposure = 100.f;
+float exposure = 50.f;
 bool exposure_enabled = true;
 
 float mouse_x = 0.0;
@@ -149,17 +149,16 @@ void DisplayHandler() {
 
 
     // TODO: figure out what's going wrong if Y does a rotation > 180
-    if (!viewLock) {
-        eyeTransform = mat4(1.0);
-        eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
-        eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
-    }
+    eyeTransform = mat4(1.0);
+    eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
+    eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
     eye = glm::vec4(0.0, 0.0, cameraDistance, 1.0);
     eye = eyeTransform * eye;
     viewMatrix = lookAt(vec3(eye), vec3(0, 0, 0), UP);
-    printf("eye: %f %f %f\n",
-        eye.x, eye.y, eye.z
-    );
+
+    // printf("eye: %f %f %f\n",
+    //     eye.x, eye.y, eye.z
+    // );
 
     normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
     projectionMatrix = perspective(
@@ -239,8 +238,10 @@ void reshapeHandler(int wd, int ht) {
 }
 
 void MouseMoveHander(int x, int y){
-    mouse_x = x / (float)window_wd;
-    mouse_y = y / (float)window_ht;
+    if (!viewLock) {
+        mouse_x = x / (float)window_wd;
+        mouse_y = y / (float)window_ht;
+    }
 }
 
 void MouseHandler(int, int state, int, int) {
@@ -282,14 +283,19 @@ void KeyHandler(unsigned char key, int, int) {
 
         // specific camera angles
         case 'm':
+            viewLock = true;
             mouse_x = 0.361667;
             mouse_y = 0.393333;
-            viewLock = true;
             break;
         case 'n':
+            viewLock = true;
             mouse_x = 0.460000;
             mouse_y = 0.761667;
+            break;
+        case 'b':
             viewLock = true;
+            mouse_x = 0.25;
+            mouse_y = 0.5;
             break;
 
     }
