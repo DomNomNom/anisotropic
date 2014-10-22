@@ -304,7 +304,9 @@ void KeyHandler(unsigned char key, int, int) {
 }
 
 void AnimateScene(void) {
-    seconds += time_dt();
+    float timeDiff = time_dt();
+    printf("%f\n", timeDiff);
+    seconds += timeDiff;
     turntableAngle = seconds * -300.0; // rotate slowly along the vertical axis
 
     framecount += 1;

@@ -79,13 +79,9 @@ vec3 makeTexCoords(Fan fan) {
 
     vec3 texCoords = getTexCoords(alpha, beta, gamma);
 
-    // if (isZero(texCoords.z) && texCoords.y < 0.0) {
-    //     error = true;
-    // }
-
     // some assertion statements
     if (!(
-        fan.dir.y * fan.g.y <= 0.0                  &&
+        // fan.dir.y * fan.g.y <= 0.0                  &&
         isZero(dot(fan.dir, fan.g))                 &&
 
         // alpha space
@@ -108,7 +104,7 @@ vec3 makeTexCoords(Fan fan) {
 
         true
     )) {
-        // error = true;
+        error = true;
     }
 
     return texCoords;

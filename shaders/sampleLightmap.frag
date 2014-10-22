@@ -7,8 +7,9 @@ uniform sampler2D lightmap_hdr;
 uniform float anisotropy;
 uniform int numSamples;
 
+// returns incoming intensity of lightmap_hdr (spherical mapping)
 vec4 sampleHdrLightmap(vec3 v) {
-    // TODO: special case when abs(v.z)+abs(v.x) == 0
+    // TODO: avoid NaNs when abs(v.z)+abs(v.x) == 0
     v = normalize(v);
     return texture(lightmap_hdr, vec2(
         ( 0.5 / pi) * atan(v.z, v.x),   // horizontal angle
@@ -20,17 +21,11 @@ vec4 sampleHdrLightmap(vec3 v) {
 // this function exists to make it easy to switch between lightmaps
 vec4 sample(vec3 dir) {
     return sampleHdrLightmap(dir);
-    return texture(lightmap, dir);
+    return texture(lightmap, dir);  // cubemap
 }
 
-// const uint numSamples = 500u;
-// const float gammaVariance = 0.5;
-// const uint numSamples = 100u;
-// const float gammaVariance = 0.001;
 // accumulates random samples on the fan described by the texCoords
 vec4 accumulateSamples(vec3 texCoords) {
-
-    // return vec4(texCoords, 1.0);
 
     // assert 0 <= texCoords <= 1
     if (!(
@@ -39,47 +34,30 @@ vec4 accumulateSamples(vec3 texCoords) {
         0.0 <= texCoords.z && texCoords.z <= 1.0 &&
         true
     )) {
-        // error = true;
-    }
-
-    Fan fan = makeFan(texCoords);
-    vec3 testTexCoords = makeTexCoords(fan);
-
-    // return vec4(testTexCoords, 1.0);
-    vec3 texCoordsDiff = texCoords - testTexCoords;
-    // return vec4(to01(texCoordsDiff), 1.0);
-    // if (isZero(texCoordsDiff.z)) {
-    //     texCoordsDiff.y = 0.0;
-    // }
-
-    // return vec4(texCoords, 1.0);
-    // return vec4(testTexCoords, 1.0);
-    // return vec4(to01(testTexCoords), 1.0);
-    // return vec4(to01(texCoordsDiff), 1.0);
-
-    if (!isZero(texCoordsDiff)) {
-        return vec4(to01(texCoordsDiff), 1.0);
         error = true;
     }
 
-    // vec3 ret;
-    // ret = to01(texCoordsDiff);
-    // return vec4(ret, 1.0);
-
-    // return sample(fan.dir);  // only one sample in the fans firection
-
-
-
-
-
-    // vary samples along the fans arc
-    vec4 accumulator = vec4(0.0);
-    if (numSamples < 1) {
-        accumulator = vec4(0.0, 1.0, 0.0, 1.0);  // I am error
+    // assert that our mapping is invertible
+    Fan fan = makeFan(texCoords);
+    vec3 testTexCoords = makeTexCoords(fan);
+    vec3 texCoordsDiff = texCoords - testTexCoords;
+    if (!isZero(texCoordsDiff)) {
+        error = true;
+        return vec4(to01(texCoordsDiff), 1.0);
     }
+
+    // you should really sample more than 0 times...
+    if (numSamples < 1) {
+        error = true;
+        return vec4(0.0, 1.0, 0.0, 1.0);
+    }
+
+
+    // vary samples along the arc
+    vec4 accumulator = vec4(0.0);
     for (int i=0; i<numSamples; ++i) {
         vec3 sampleCoord = texCoords;
-        sampleCoord.z += anisotropy * rand();
+        sampleCoord.z += anisotropy * rand();  // vary the gamma angle
         accumulator += sample(
             makeFan(sampleCoord).dir
         );

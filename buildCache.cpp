@@ -125,7 +125,7 @@ void displayHandler() {
         float pixelDataOne[4];
         glReadPixels((width*3)/4, (height*1)/4, 1, 1, GL_RGBA, GL_FLOAT, pixelDataOne);
 
-        printf("%03ed %2f\n", gammaSample, pixelDataOne[2]);
+        printf("%03d\n", gammaSample);
         gammaSample += 1;
     }
     exr_texture_save(filePath, pixelData, width, height);
