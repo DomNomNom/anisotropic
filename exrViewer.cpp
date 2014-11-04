@@ -84,7 +84,7 @@ void displayHandler() {
     glUniform1f( glGetUniformLocation(shader.id(), "exposure"), 100 * mouse_y);
 
     // glUniform1f( glGetUniformLocation(shader.id(), "exposure"),  mouse_x);
-
+    printf("mouse %f\n", mouse_x);
 
     drawWindowSizedQuad();
 
@@ -112,6 +112,14 @@ void keyHandler(unsigned char key, int, int) {
             exit(0);
             break;
     }
+}
+
+
+void MouseHandler(int, int state, int, int) {
+    if (state == GLUT_DOWN) {
+        printf("mouse %f\n", mouse_x);
+    }
+    // glutPostRedisplay();
 }
 
 void mouseMoveHander(int x, int y){

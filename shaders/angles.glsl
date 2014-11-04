@@ -1,30 +1,30 @@
-
-// represents a fan of directions emmitted from (0 0 0)
+// represents a collection of directions shaped like a
 struct Fan {
-    // fan width is ommitted
-    // a soft constraint: dir.y * g.y <= 0.0
-
     // center of the fan's direction
     vec3 dir;
 
     // the orientation of the fan defined by the normal to the plane
     // this is orientation of the Gamma axis (hence g)
+    // constraint when making texture coordinates: dot(dir, g) == 0.0
     vec3 g;
+
+    // fan width is ommitted as it is presumed to be constant
 };
 
 
+// note: tau is a constant defined to be 2.0*pi
 
 // takes   (0..tau      0..pi/2  0..tau )
 // returns (0..1        0..1     0..1  )
-vec3 getTexCoords(float alpha, float beta, float gamma) {
+vec3 anglesToTexCoords(float alpha, float beta, float gamma) {
     vec3 texCoords = vec3(alpha, beta*4.0, gamma);
     return texCoords / tau;  //  0..tau  --> 0..1
 }
 
-// inverse of getTexCoords()
+// inverse of anglesToTexCoords()
 // takes   (0..1        0..1     0..1  )
 // returns (0..tau  -pi/2..pi/2  0..pi )
-vec3 getAngles(vec3 texCoords) {
+vec3 texCoordsToAngles(vec3 texCoords) {
     vec3 ABG = texCoords * tau;
     ABG.y *= 0.25;
     return ABG;
@@ -48,28 +48,38 @@ float myAtan2(float y, float x) {
 // corresponding angles: (0..tau      0..pi/2  0..tau)
 vec3 makeTexCoords(Fan fan) {
 
-    // TODO: special cases for abs(dir.y) == 1
-
     // sanitize our input
     fan.dir = normalize(fan.dir);
     fan.g   = normalize(fan.g);
-    if (fan.g.y < 0.0) {
-        fan.g *= -1.0;  // we can rotate the fan about fan.dir 180 degrees and nothing should change
-    }
 
-    float beta = acos(fan.g.y);
+    // force fan.g.y >= 0.0
+    // this constraint will force 0 <= beta <= pi/2
+    // when g is reversed, the fan remains the same
+    if (fan.g.y < 0.0) {
+        fan.g *= -1.0;
+    }
 
 
     // vectors for alpha and gamma space
-    vec3 horizontal   = normalize(-vec3(fan.g.x, 0.0, fan.g.z)); // the hoizontal direction on the top of the gamma plane
-    vec3 biHorizontal = normalize(cross(horizontal, vec3(0.0, 1.0, 0.0)));  // the right side when looking down on the gamma plane
-    vec3 elevation    = normalize(cross(fan.g, biHorizontal));            // a vector tangent to the fan at the horizontal plane
+    // there is a special case when abs(dir.y) == 1
+
+    // the hoizontal direction on the top of the gamma plane
+    vec3 horizontal   = normalize(-vec3(fan.g.x, 0.0, fan.g.z));
+    // the right side when looking down on the gamma plane
+    vec3 biHorizontal = normalize(cross(horizontal, vec3(0.0, 1.0, 0.0)));
+    // a vector tangent to the fan at the horizontal plane
+    vec3 elevation    = normalize(cross(fan.g, biHorizontal));
 
     // alpha
-    float alpha = myAtan2(-biHorizontal.z, biHorizontal.x);  // clockwise rotation around Y
+    // clockwise rotation around Y
+    float alpha = myAtan2(-biHorizontal.z, biHorizontal.x);
+
+    // beta
+    float beta = acos(fan.g.y);
 
     // gamma
-    float gamma = myAtan2(  // find the angle of fan.dir projected onto the fan-circle plane
+    // find the angle of fan.dir projected onto the fan-circle plane
+    float gamma = myAtan2(
         dot(fan.dir, elevation),    // gamma-space y
         dot(fan.dir, biHorizontal)  // gamma-space x
     );
@@ -77,11 +87,10 @@ vec3 makeTexCoords(Fan fan) {
         gamma = 0.0;
     }
 
-    vec3 texCoords = getTexCoords(alpha, beta, gamma);
+    vec3 texCoords = anglesToTexCoords(alpha, beta, gamma);
 
     // some assertion statements
     if (!(
-        // fan.dir.y * fan.g.y <= 0.0                  &&
         isZero(dot(fan.dir, fan.g))                 &&
 
         // alpha space
@@ -102,7 +111,7 @@ vec3 makeTexCoords(Fan fan) {
         0.0 <= texCoords.y && texCoords.y <= 1.0    &&
         0.0 <= texCoords.z && texCoords.z <= 1.0    &&
 
-        true
+        true  // this is here to allow for easier code bisection when debugging
     )) {
         error = true;
     }
@@ -113,30 +122,20 @@ vec3 makeTexCoords(Fan fan) {
 
 
 
-
-
-
-
-// these two give the same results
-mat3 makeTransform1(float alpha, float beta, float gamma) {
+// returns a 3x3 rotation matrix for the given angles
+// note: each of the axis refers to an axis in the transformed space
+mat3 makeTransform(float alpha, float beta, float gamma) {
     mat3 alphaTransform = rotationMatrix3(vec3(0.0, 1.0, 0.0), alpha);
     mat3 betaTransform  = rotationMatrix3(vec3(1.0, 0.0, 0.0), beta );
     mat3 gammaTransform = rotationMatrix3(vec3(0.0, 1.0, 0.0), gamma);
     return alphaTransform * betaTransform * gammaTransform;
 }
 
-mat3 makeTransform2(float alpha, float beta, float gamma) {
-    mat3 alphaTransform = rotationMatrix3(                                 vec3(0.0, 1.0, 0.0), alpha);
-    mat3 betaTransform  = rotationMatrix3(                alphaTransform * vec3(1.0, 0.0, 0.0), beta );
-    mat3 gammaTransform = rotationMatrix3(betaTransform * alphaTransform * vec3(0.0, 1.0, 0.0), gamma);
-    return gammaTransform * betaTransform * alphaTransform;  // NOTE: reversed order compared to makeTransform1
-}
-
 // returns a Fan for the given texCoords
 // inverse of makeTexCoords()
 Fan makeFan(vec3 texCoords) {
-    vec3 ABG = getAngles(texCoords);
-    mat3 transform = makeTransform1(ABG.x, ABG.y, ABG.z);
+    vec3 ABG = texCoordsToAngles(texCoords);
+    mat3 transform = makeTransform(ABG.x, ABG.y, ABG.z);
     return Fan(
         transform * vec3(1.0, 0.0, 0.0),
         transform * vec3(0.0, 1.0, 0.0)

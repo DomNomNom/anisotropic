@@ -198,14 +198,14 @@ vec4 anisotropic(vec3 normal, vec3 cam2pos, vec3 tangent, float anisotropy) {
     for (int i=0; i<numSamples; ++i) {
         vec3 reflectedDir;
 
-        if (tester_int == 1) {
-            reflectedDir = rotationMatrix3(g, rand() * (pi/2) * anisotropy) * r;
+        if (tester_int == 4) {
+            reflectedDir = rotationMatrix3(g, rand() * (tau) * anisotropy) * r;
         }
-        else if (tester_int == 2) {
+        else if (tester_int == 5) {
             // sampled arc approach
-            reflectedDir = rotationMatrix3(tangent, rand() * (pi/2) * anisotropy) * r;
+            reflectedDir = rotationMatrix3(tangent, rand() * (tau) * anisotropy) * r;
         }
-        else if (tester_int == 3) {
+        else if (tester_int == 6) {
             // varied normal approach
             vec3 reflectionNormal = normal + anisotropy * rand() * biTangent;
             reflectionNormal = hemisphere(normalize(reflectionNormal), normal);
