@@ -3,6 +3,7 @@
 *.lo
 *.o
 *.obj
+!assets/*.obj
 
 # Compiled Dynamic libraries
 *.so

@@ -7,14 +7,15 @@ smooth in vec4 pos_view;
 smooth in vec4 pos_world;
 smooth in vec4 pos_model;
 
+smooth in vec3 normal_world;
 
-smooth in vec4 vertex_normal;
 smooth in vec4 lights[4];
 // varying vec4 tangent;
 
 uniform bool exposure_enabled;
 uniform float exposure = 1.0;
 uniform float tester2;
+uniform float tangentRotation;
 uniform int tester_int;
 uniform vec2 mouse;
 uniform vec4 eye;
@@ -37,15 +38,23 @@ void main() {
     vec4 pos2cam = eye - pos_world; // world space
 
     // normal = vec4(normalize(-pos_world.xyz), 0.0);
-    vec4 modelNormal;
-    if (abs(pos_model.y) > 0.999) {
-        modelNormal = vec4(0.0, pos_model.y, 0.0, 0.0);
-    }
-    else {
-        modelNormal = vec4(pos_model.x, 0.0, pos_model.z, 0.0);
-    }
-    vec3 normal  = normalize(modelMatrix * modelNormal).xyz;
+    // vec4 modelNormal;
+
+    // if (false) {  // cylinder or sphere
+    //     if (abs(pos_model.y) > 0.999) {
+    //         modelNormal = vec4(0.0, pos_model.y, 0.0, 0.0);
+    //     }
+    //     else {
+    //         modelNormal = vec4(pos_model.x, 0.0, pos_model.z, 0.0);
+    //     }
+    // }
+    // else {
+    //     modelNormal = vec4(pos_model.xyz, 0.0);
+    // }
+    // vec3 normal  = normalize(modelMatrix * modelNormal).xyz;
+    vec3 normal = normalize(normal_world);
     vec3 tangent = normalize(modelMatrix * vec4(pos_model.z, 0.0, -pos_model.x, 0.0)).xyz;
+    tangent = rotationMatrix3(normal, 0.5 * pi * tangentRotation) * tangent;
 
     fragColor = anisotropic(normal, -pos2cam.xyz, tangent, anisotropy);
     // fragColor = texture(lightmap_hdr, pos_screen.xy / pos_screen.z ) * 100.0;
@@ -55,6 +64,7 @@ void main() {
     //     fragColor = vec4(0.0,0.0,1.0, 1.0);
     // }
 
+
     if (error) {
         fragColor += errorColor;
     }
@@ -62,5 +72,8 @@ void main() {
         fragColor = 1.0 - exp(-exposure * fragColor);
     }
 
-
+    // fragColor = vec4(to01(normal_world), 1.0);
+    // if (dot(normal, pos_model.xyz) < 0.0) {
+    //     fragColor = vec4(0.0, 0.0, 1.0, 1.0);
+    // }
 }

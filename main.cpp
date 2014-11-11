@@ -32,8 +32,10 @@ int window_ht = 600;
 float aspectRatio = window_wd / window_ht;
 float window_xOffset;
 
-G308_Geometry* g_pGeometry = NULL;
-int objects; // size of g_pGeometry
+G308_Geometry* objects = NULL;
+uint numObjects; // size of objects
+uint currentObject = 2;
+
 
 G308_Geometry skybox;
 
@@ -59,6 +61,7 @@ float mouse_x = 0.0;
 float mouse_y = 0.0;
 float anisotropy = DEFAULT_ANISOTROPY;
 float tester2 = 50;
+float tangentRotation = 1.0;
 int tester_int = 0;
 const glm::vec3 cacheResolution = glm::vec3(
     RESOLUTION_ALPHA,
@@ -138,14 +141,6 @@ void DisplayHandler() {
 
     // matrcies
     modelMatrix = mat4(1.0); // load identity
-    modelMatrix = rotate(modelMatrix, 90.f, UP);
-    // modelMatrix = rotate(modelMatrix, (mouse_y-0.5f) * 180.0f, vec3(0.0, 0.0, 1.0));
-    // modelMatrix = rotate(modelMatrix,  turntableAngle, vec3(0.0, 1.0, 0.0));
-
-    // printf("omg %d\n", (mouse_y-0.5f) * 180.0f);
-    // modelMatrix = rotate(modelMatrix, 0.1f *turntableAngle, UP);
-    modelMatrix = scale(modelMatrix, vec3(1.5));
-    // modelMatrix = translate(modelMatrix, vec3(0, 0, 0));
 
 
     // TODO: figure out what's going wrong if Y does a rotation > 180
@@ -160,7 +155,9 @@ void DisplayHandler() {
     //     eye.x, eye.y, eye.z
     // );
 
-    normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
+    // normalMatrix = transpose(inverse(mat3(viewMatrix * modelMatrix)));
+    normalMatrix = mat3(modelMatrix);
+    // normalMatrix = mat3(1.0);
     projectionMatrix = perspective(
         60.0f,
         (float)window_wd / (float)window_ht,
@@ -168,8 +165,8 @@ void DisplayHandler() {
         100.f
     );
 
+    // skybox
     skyboxShader.bind();
-
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure"), exposure);
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "exposure_enabled"), exposure_enabled);
     glUniform1f( glGetUniformLocation(skyboxShader.id(), "anisotropy"), anisotropy);
@@ -185,7 +182,20 @@ void DisplayHandler() {
     skybox.RenderGeometry();
     skyboxShader.unbind();
 
+
+    modelMatrix = rotate(modelMatrix, 90.f, UP);
+    if (currentObject == 2) { // teapot
+        modelMatrix = translate(modelMatrix, vec3(0.0, -0.5, 0.0));
+        modelMatrix = scale(modelMatrix, vec3(0.3));
+    }
+    else {
+        modelMatrix = scale(modelMatrix, vec3(1.5));
+    }
+    normalMatrix = mat3(modelMatrix);
+
+
     if (useShader) {
+
         shader.bind();
 
         numSamples = (int) tester2;
@@ -200,6 +210,7 @@ void DisplayHandler() {
         glUniform1f( glGetUniformLocation(shader.id(), "time"),  seconds);
         glUniform1f( glGetUniformLocation(shader.id(), "anisotropy" ),  anisotropy);
         glUniform1f( glGetUniformLocation(shader.id(), "tester2"),  tester2);
+        glUniform1f( glGetUniformLocation(shader.id(), "tangentRotation"),  tangentRotation);
         glUniform2f( glGetUniformLocation(shader.id(), "mouse"), mouse_x, mouse_y);
         glUniform3f(glGetUniformLocation(shader.id(), "cacheResolution"), cacheResolution.x, cacheResolution.y, cacheResolution.z);
         // glUniform3fv(glGetUniformLocation(shader.id(), "sampleDirections"), numSamples, value_ptr(sampleDirections[0]));
@@ -214,7 +225,7 @@ void DisplayHandler() {
     }
 
     // iterate over the geometries?
-    g_pGeometry[0].RenderGeometry();
+    objects[currentObject].RenderGeometry();
 
 
     if (useShader) shader.unbind();
@@ -257,6 +268,7 @@ void MouseHandler(int, int state, int, int) {
 }
 
 
+// Input
 void KeyHandler(unsigned char key, int, int) {
     switch (key) {
         case 27: // Escape -> exit
@@ -268,8 +280,6 @@ void KeyHandler(unsigned char key, int, int) {
             break;
         case 'a': animated  = !animated;    break;
         case 't': turntable = !turntable;   break;
-        // case '[': tester_int -= 1;          break;
-        // case ']': tester_int += 1;          break;
         case 'e': exposure_enabled = !exposure_enabled; break;
         case '1': tester_int = 0;   break;
         case '2': tester_int = 1;   break;
@@ -280,6 +290,10 @@ void KeyHandler(unsigned char key, int, int) {
         case '7': tester_int = 6;   break;
         case '8': tester_int = 7;   break;
         case '9': tester_int = 8;   break;
+
+        // changing the model
+        case '[': if (currentObject > 0        ) currentObject -= 1;    break;
+        case ']': if (currentObject < numObjects-1) currentObject += 1;    break;
 
         // specific camera angles
         case 'm':
@@ -305,7 +319,7 @@ void KeyHandler(unsigned char key, int, int) {
 
 void AnimateScene(void) {
     float timeDiff = time_dt();
-    printf("%f\n", timeDiff);
+    // printf("%f\n", timeDiff);
     seconds += timeDiff;
     turntableAngle = seconds * -300.0; // rotate slowly along the vertical axis
 
@@ -344,20 +358,14 @@ int main(int argc, char** argv) {
 
 
     // the .objs we are going to render
-    objects = argc - 1;
-    if (objects) {
-        g_pGeometry = new G308_Geometry[objects];
-        for (int i=0; i<objects; ++i) {
-            g_pGeometry[i].ReadOBJ(argv[i+1]);
-            g_pGeometry[i].CreateGLPolyGeometry();
-            g_pGeometry[i].CreateGLWireGeometry();
-        }
-    }
-    else {
-        g_pGeometry = new G308_Geometry[1];
-        g_pGeometry[0].ReadOBJ("./assets/cylinder2.obj");
-        g_pGeometry[0].CreateGLPolyGeometry();
-        g_pGeometry[0].CreateGLWireGeometry();
+    numObjects = 3;
+    objects = new G308_Geometry[numObjects];
+    objects[0].ReadOBJ("./assets/sphereWithNormals.obj");
+    objects[1].ReadOBJ("./assets/cylinder100.obj");
+    objects[2].ReadOBJ("./assets/teapot.obj");
+    for (uint i=0; i<numObjects; ++i) {
+        objects[i].CreateGLPolyGeometry();
+        // objects[i].CreateGLWireGeometry();
     }
 
     skybox.ReadOBJ("assets/box.obj");
@@ -384,7 +392,6 @@ int main(int argc, char** argv) {
 
     lightmap_hdr = exr_texture_load("assets/exr/vuw_sunny_hdr_mod1_320_32.exr");
     lightmap = png_cubemap_load("assets/bright_dots/");
-    // lightmap = png_cubemap_load("assets/beach_bright128/");
 
     cache = 0;
     if (cacheType == ARC) {
@@ -394,14 +401,14 @@ int main(int argc, char** argv) {
         // TODO
     }
 
-    // anisotropy = DEFAULT_ANISOTROPY;
     tweak(&anisotropy);
     tweak(&tester2);
     tweak(&exposure);
+    tweak(&tangentRotation);
 
     glutMainLoop();
 
-    if (g_pGeometry != NULL) delete[] g_pGeometry;
+    if (objects != NULL) delete[] objects;
 
     return 0;
 }
