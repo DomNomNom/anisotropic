@@ -51,10 +51,12 @@ mat4 projectionMatrix;
 mat3 normalMatrix;
 mat4 eyeTransform;
 
-float turntableAngle = 0.f;
-float scaleFactor = 1.f;
+float turntableAngle = 0.0;
+float turntableElevation = 0.0;
+float turntableElevationDefault = -30.0;
+float scaleFactor = 1.0;
 float cameraDistance = 4.5;
-float exposure = 50.f;
+float exposure = 50.0;
 bool exposure_enabled = true;
 
 float mouse_x = 0.0;
@@ -62,7 +64,7 @@ float mouse_y = 0.0;
 float anisotropy = DEFAULT_ANISOTROPY;
 float tester2 = 50;
 float tangentRotation = 1.0;
-int tester_int = 0;
+int tester_int = 1;
 const glm::vec3 cacheResolution = glm::vec3(
     RESOLUTION_ALPHA,
     RESOLUTION_BETA,
@@ -75,8 +77,9 @@ const glm::vec3 cacheResolution = glm::vec3(
 // );
 
 bool viewLock = false;
-bool animated = false;
 bool turntable = false;
+uint turntableFrame = 0;
+uint turntableFrames = 50;
 
 glm::vec4 lightVectors[] = {
     normalize(  glm::vec4(  1.0, 1.0, 1.0, 0.0)), // directional (vector to light)
@@ -132,21 +135,27 @@ void DisplayHandler() {
     glActiveTexture(GL_TEXTURE1); glBindTexture(GL_TEXTURE_2D,          lightmap_hdr);
     glActiveTexture(GL_TEXTURE0); glBindTexture(GL_TEXTURE_CUBE_MAP,    lightmap    );
 
-    if (turntable) {
-        turntableAngle = 50 * seconds;
-    }
-    else {
-        turntableAngle = (mouse_x+0.25f) * 360.0f;
-    }
 
     // matrcies
     modelMatrix = mat4(1.0); // load identity
 
 
-    // TODO: figure out what's going wrong if Y does a rotation > 180
+    // view
+    if (turntable && turntableFrame == turntableFrames) {
+        turntable = false;
+    }
+    if (turntable) {
+        turntableAngle = 360.0f * (float)turntableFrame / (float)turntableFrames;
+        turntableElevation = turntableElevationDefault;
+        turntableFrame += 1;
+    }
+    else {
+        turntableAngle     = (mouse_x-0.5f) * -360.0f;
+        turntableElevation = (mouse_y-0.5f) * -180.0f;
+    }
     eyeTransform = mat4(1.0);
-    eyeTransform = rotate(eyeTransform, (mouse_x-0.5f) * -360.0f, vec3(0.0, 1.0, 0.0));
-    eyeTransform = rotate(eyeTransform, (mouse_y-0.5f) * -180.0f, vec3(1.0, 0.0, 0.0));
+    eyeTransform = rotate(eyeTransform, turntableAngle,     vec3(0.0, 1.0, 0.0));
+    eyeTransform = rotate(eyeTransform, turntableElevation, vec3(1.0, 0.0, 0.0));
     eye = glm::vec4(0.0, 0.0, cameraDistance, 1.0);
     eye = eyeTransform * eye;
     viewMatrix = lookAt(vec3(eye), vec3(0, 0, 0), UP);
@@ -278,8 +287,7 @@ void KeyHandler(unsigned char key, int, int) {
         case 's': // toggle shaders
             useShader = !useShader;
             break;
-        case 'a': animated  = !animated;    break;
-        case 't': turntable = !turntable;   break;
+        case 't': turntable = true; turntableFrame = 0;  break;
         case 'e': exposure_enabled = !exposure_enabled; break;
         case '1': tester_int = 0;   break;
         case '2': tester_int = 1;   break;
@@ -292,7 +300,7 @@ void KeyHandler(unsigned char key, int, int) {
         case '9': tester_int = 8;   break;
 
         // changing the model
-        case '[': if (currentObject > 0        ) currentObject -= 1;    break;
+        case '[': if (currentObject > 0           ) currentObject -= 1;    break;
         case ']': if (currentObject < numObjects-1) currentObject += 1;    break;
 
         // specific camera angles
@@ -395,7 +403,7 @@ int main(int argc, char** argv) {
 
     cache = 0;
     if (cacheType == ARC) {
-        cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
+        // cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
     }
     else if (cacheType == SPHERICAL_HARMONIC) {
         // TODO
