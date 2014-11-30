@@ -269,7 +269,7 @@ void MouseHandler(int, int state, int, int) {
         if (!viewLock) {
             printf("\n");
             printf("mouse_x = %f;\n", mouse_x);
-            printf("mouse_y = %f;\n", mouse_y);
+            // printf("mouse_y = %f;\n", mouse_y);
         }
         viewLock  = !viewLock;
     }
@@ -403,7 +403,7 @@ int main(int argc, char** argv) {
 
     cache = 0;
     if (cacheType == ARC) {
-        // cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
+        cache = exr_cubetex_load("assets/cache2/cache", RESOLUTION_GAMMA);
     }
     else if (cacheType == SPHERICAL_HARMONIC) {
         // TODO
